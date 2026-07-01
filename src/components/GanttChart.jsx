@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Calendar, ZoomIn, ZoomOut, AlertTriangle, CheckCircle, Clock, ChevronUp, ChevronDown, ArrowDownAZ } from 'lucide-react';
+import { Calendar, ZoomIn, ZoomOut, AlertTriangle, CheckCircle, Clock, ChevronUp, ChevronDown, ChevronRight, ArrowDownAZ } from 'lucide-react';
 
 // Hardcoded current date based on system metadata: 2026-06-26
 const CURRENT_DATE = new Date('2026-06-26');
@@ -284,21 +284,41 @@ export default function GanttChart({
                   }`}
                 >
                   <div
-                    className={`w-[280px] min-w-[280px] border-r border-slate-200/80 sticky left-0 px-6 py-3 flex flex-col justify-center gap-1.5 z-10 transition-colors shadow-[4px_0_10px_-4px_rgba(0,0,0,0.12)] ${
+                    className={`w-[280px] min-w-[280px] border-r border-slate-200/80 sticky left-0 py-3 flex flex-col justify-center gap-1.5 z-10 transition-colors shadow-[4px_0_10px_-4px_rgba(0,0,0,0.12)] ${
                       isSelected 
                         ? 'bg-brand-50 border-r-2 border-r-brand-500' 
                         : 'bg-white group-hover:bg-slate-50/80'
                     }`}
+                    style={{ paddingLeft: `${24 + (act.depth || 0) * 16}px`, paddingRight: '24px' }}
                   >
                     <div className="flex items-center justify-between w-full gap-2">
                       <div className="flex items-center gap-2 truncate">
+                        {/* Expand/Collapse Chevron for Group Tasks */}
+                        {act.is_group && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleGroupCollapse(act.id);
+                            }}
+                            className="p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors mr-0.5 cursor-pointer flex-shrink-0"
+                            title={collapsedGroups?.includes(act.id) ? "Expand Group" : "Collapse Group"}
+                          >
+                            {collapsedGroups?.includes(act.id) ? (
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
+
                         {/* Selection order indicator */}
                         {isSelected && (
                           <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-bold">
                             {selectionIndex}
                           </span>
                         )}
-                        <span className={`text-xs font-semibold leading-tight truncate ${isSelected ? 'text-slate-900' : 'text-slate-700'} flex items-center gap-1.5`}>
+                        <span className={`text-xs leading-tight truncate ${act.is_group ? 'font-extrabold text-slate-800' : 'font-semibold text-slate-600'} ${isSelected ? 'text-slate-900' : ''} flex items-center gap-1.5`}>
                           {act.project_name && (
                             <span className="flex-shrink-0 text-teal-600 font-extrabold bg-teal-50/80 border border-teal-200/60 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">
                               {act.project_name}
@@ -374,55 +394,97 @@ export default function GanttChart({
                     {/* Dual bar wrapper */}
                     <div className="w-full relative h-12">
                       
-                      {/* PLAN BAR (Top Bar - Soft slate-blue/gray) */}
-                      <div
-                        style={{
-                          left: `${planStartPercent}%`,
-                          width: `${planWidthPercent}%`
-                        }}
-                        title={`[Plan] ${act.activity_name}\nStart: ${act.plan_start}\nEnd: ${act.plan_end}`}
-                        className={`absolute top-0 h-4 rounded-md bg-slate-300/80 border border-slate-400/20 group-hover:bg-slate-300 transition-all z-2 shadow-xs`}
-                      >
-                        <div className="w-full h-full flex items-center px-2 overflow-hidden">
-                          <span className="text-[9px] font-bold text-slate-700 truncate select-none opacity-0 group-hover:opacity-100 transition-opacity">
-                            Plan
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* ACTUAL BAR (Bottom Bar) */}
-                      {hasActualStart && (
-                        <div
-                          style={{
-                            left: `${actualStartPercent}%`,
-                            width: `${actualWidthPercent}%`
-                          }}
-                          title={`[Actual] ${act.activity_name}\nStart: ${act.actual_start}\nEnd: ${act.actual_end || 'In Progress'}\nStatus: ${isInProgress ? 'In Progress' : 'Completed'}`}
-                          className={`absolute bottom-0 h-[18px] rounded-md transition-all z-2 shadow-xs border flex items-center justify-between px-2 overflow-hidden ${
-                            isDelayed
-                              ? 'bg-rose-500/90 text-white border-rose-600/30 hover:bg-rose-500'
-                              : 'bg-teal-500/95 text-white border-teal-600/30 hover:bg-teal-500'
-                          } ${isInProgress ? 'border-dashed border-2 animate-pulse-subtle' : ''}`}
-                        >
-                          {/* Inner status and label */}
-                          <div className="flex items-center gap-1 overflow-hidden">
-                            <span className="text-[9px] font-extrabold uppercase tracking-wide truncate">
-                              {isInProgress ? 'Active' : 'Actual'}
-                            </span>
-                          </div>
-
-                          {/* Delay badge floating at the end of the actual bar */}
-                          {isDelayed && (
-                            <span className="absolute -right-1 translate-x-full ml-2 bg-rose-100 text-rose-700 border border-rose-200 text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs whitespace-nowrap z-20">
-                              +{delayDays} Days Delay
-                            </span>
+                      {act.is_group ? (
+                        <>
+                          {/* SUMMARY BAR: Planned (Top Bar - Dark slate-gray bracket) */}
+                          {act.plan_start && act.plan_end && (
+                            <div
+                              style={{
+                                left: `${planStartPercent}%`,
+                                width: `${planWidthPercent}%`
+                              }}
+                              className="absolute top-1.5 h-3 bg-slate-800 rounded-sm z-2"
+                              title={`[Phase Plan] ${act.activity_name}\nStart: ${act.plan_start}\nEnd: ${act.plan_end}`}
+                            >
+                              {/* Left downward triangle/bracket */}
+                              <div className="absolute left-0 top-0 w-2.5 h-4.5 bg-slate-800 rounded-bl-sm -translate-x-[1px]" />
+                              {/* Right downward triangle/bracket */}
+                              <div className="absolute right-0 top-0 w-2.5 h-4.5 bg-slate-800 rounded-br-sm translate-x-[1px]" />
+                            </div>
                           )}
-                          {isCompleted && !isDelayed && (
-                            <span className="absolute -right-1 translate-x-full ml-2 bg-emerald-100 text-emerald-700 border border-emerald-200 text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs whitespace-nowrap z-20">
-                              On Track
-                            </span>
+
+                          {/* SUMMARY BAR: Actual (Bottom Bar - Teal/Rose bracket) */}
+                          {hasActualStart && (
+                            <div
+                              style={{
+                                left: `${actualStartPercent}%`,
+                                width: `${actualWidthPercent}%`
+                              }}
+                              className={`absolute bottom-1 h-3 rounded-sm z-2 ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`}
+                              title={`[Phase Actual] ${act.activity_name}\nStart: ${act.actual_start}\nEnd: ${act.actual_end || 'In Progress'}`}
+                            >
+                              {/* Left downward bracket */}
+                              <div className={`absolute left-0 top-0 w-2 h-4.5 rounded-bl-sm -translate-x-[1px] ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`} />
+                              {/* Right downward bracket */}
+                              <div className={`absolute right-0 top-0 w-2 h-4.5 rounded-br-sm translate-x-[1px] ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`} />
+                            </div>
                           )}
-                        </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* PLAN BAR (Top Bar - Soft slate-blue/gray) */}
+                          {act.plan_start && act.plan_end && (
+                            <div
+                              style={{
+                                left: `${planStartPercent}%`,
+                                width: `${planWidthPercent}%`
+                              }}
+                              title={`[Plan] ${act.activity_name}\nStart: ${act.plan_start}\nEnd: ${act.plan_end}`}
+                              className={`absolute top-0 h-4 rounded-md bg-slate-300/80 border border-slate-400/20 group-hover:bg-slate-300 transition-all z-2 shadow-xs`}
+                            >
+                              <div className="w-full h-full flex items-center px-2 overflow-hidden">
+                                <span className="text-[9px] font-bold text-slate-700 truncate select-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                  Plan
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* ACTUAL BAR (Bottom Bar) */}
+                          {hasActualStart && (
+                            <div
+                              style={{
+                                left: `${actualStartPercent}%`,
+                                width: `${actualWidthPercent}%`
+                              }}
+                              title={`[Actual] ${act.activity_name}\nStart: ${act.actual_start}\nEnd: ${act.actual_end || 'In Progress'}\nStatus: ${isInProgress ? 'In Progress' : 'Completed'}`}
+                              className={`absolute bottom-0 h-[18px] rounded-md transition-all z-2 shadow-xs border flex items-center justify-between px-2 overflow-hidden ${
+                                isDelayed
+                                  ? 'bg-rose-500/90 text-white border-rose-600/30 hover:bg-rose-500'
+                                  : 'bg-teal-500/95 text-white border-teal-600/30 hover:bg-teal-500'
+                              } ${isInProgress ? 'border-dashed border-2 animate-pulse-subtle' : ''}`}
+                            >
+                              {/* Inner status and label */}
+                              <div className="flex items-center gap-1 overflow-hidden">
+                                <span className="text-[9px] font-extrabold uppercase tracking-wide truncate">
+                                  {isInProgress ? 'Active' : 'Actual'}
+                                </span>
+                              </div>
+
+                              {/* Delay badge floating at the end of the actual bar */}
+                              {isDelayed && (
+                                <span className="absolute -right-1 translate-x-full ml-2 bg-rose-100 text-rose-700 border border-rose-200 text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs whitespace-nowrap z-20">
+                                  +{delayDays} Days Delay
+                                </span>
+                              )}
+                              {isCompleted && !isDelayed && (
+                                <span className="text-[9px] font-extrabold uppercase tracking-wide text-white truncate">
+                                  Done
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

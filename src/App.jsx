@@ -42,6 +42,7 @@ export default function App() {
   const [activityToDuplicate, setActivityToDuplicate] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState([1, 2, 3, 4, 5, 6, 7]);
+  const [collapsedGroups, setCollapsedGroups] = useState([]);
 
   // Fetch projects on mount
   useEffect(() => {
@@ -96,9 +97,9 @@ export default function App() {
   }, [selectedProjectId]);
 
   // Handle adding a new activity
-  const handleAddActivity = async (name, start, end) => {
+  const handleAddActivity = async (name, start, end, isGroup = false, parentId = null) => {
     try {
-      await dbService.addActivity(selectedProjectId, name, start, end);
+      await dbService.addActivity(selectedProjectId, name, start, end, isGroup, parentId);
       await fetchActivities(); // refresh lists
     } catch (err) {
       console.error('Error adding activity:', err);
@@ -107,9 +108,9 @@ export default function App() {
   };
 
   // Handle updating activity details (both plan and actual)
-  const handleUpdateActivity = async (id, name, planStart, planEnd, start, end) => {
+  const handleUpdateActivity = async (id, name, planStart, planEnd, start, end, isGroup = false, parentId = null) => {
     try {
-      await dbService.updateActivity(id, name, planStart, planEnd, start, end);
+      await dbService.updateActivity(id, name, planStart, planEnd, start, end, isGroup, parentId);
       await fetchActivities(); // refresh lists
       return true;
     } catch (err) {
@@ -189,6 +190,89 @@ export default function App() {
     setExpandedProjects(prev =>
       prev.includes(projId) ? prev.filter(id => id !== projId) : [...prev, projId]
     );
+  };
+
+  // Toggle summary group collapse/expand state
+  const toggleGroupCollapse = (groupId) => {
+    setCollapsedGroups(prev =>
+      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
+    );
+  };
+
+  // WBS Tree Helpers
+  const rollupDates = (activitiesList) => {
+    const getDescendants = (nodes, parentId) => {
+      let result = [];
+      const children = nodes.filter(n => n.parent_id === parentId);
+      for (const child of children) {
+        result.push(child);
+        result = [...result, ...getDescendants(nodes, child.id)];
+      }
+      return result;
+    };
+
+    return activitiesList.map(act => {
+      if (!act.is_group) return act;
+
+      const descendants = getDescendants(activitiesList, act.id).filter(d => !d.is_group);
+      if (descendants.length === 0) {
+        return {
+          ...act,
+          plan_start: null,
+          plan_end: null,
+          actual_start: null,
+          actual_end: null
+        };
+      }
+
+      const planStarts = descendants.map(d => d.plan_start).filter(Boolean).map(d => new Date(d));
+      const planEnds = descendants.map(d => d.plan_end).filter(Boolean).map(d => new Date(d));
+      const minPlanStart = planStarts.length > 0 ? new Date(Math.min(...planStarts)) : null;
+      const maxPlanEnd = planEnds.length > 0 ? new Date(Math.max(...planEnds)) : null;
+
+      const actualStarts = descendants.map(d => d.actual_start).filter(Boolean).map(d => new Date(d));
+      const actualEnds = descendants.map(d => d.actual_end).filter(Boolean).map(d => new Date(d));
+      const minActualStart = actualStarts.length > 0 ? new Date(Math.min(...actualStarts)) : null;
+
+      const allDescendantsCompleted = descendants.every(d => !d.actual_start || d.actual_end);
+      const maxActualEnd = allDescendantsCompleted && actualEnds.length === descendants.filter(d => d.actual_start).length && actualEnds.length > 0
+        ? new Date(Math.max(...actualEnds))
+        : null;
+
+      return {
+        ...act,
+        plan_start: minPlanStart ? minPlanStart.toISOString().split('T')[0] : null,
+        plan_end: maxPlanEnd ? maxPlanEnd.toISOString().split('T')[0] : null,
+        actual_start: minActualStart ? minActualStart.toISOString().split('T')[0] : null,
+        actual_end: maxActualEnd ? maxActualEnd.toISOString().split('T')[0] : null
+      };
+    });
+  };
+
+  const getFlattenedActivities = (activitiesList) => {
+    const rolledUpList = rollupDates(activitiesList);
+
+    const flatten = (nodes, parentId = null, depth = 0) => {
+      const result = [];
+      const levelNodes = nodes.filter(n => n.parent_id === parentId);
+      levelNodes.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+      for (const node of levelNodes) {
+        result.push({ ...node, depth });
+        if (node.is_group && !collapsedGroups.includes(node.id)) {
+          result.push(...flatten(nodes, node.id, depth + 1));
+        }
+      }
+      return result;
+    };
+
+    const projectIds = [...new Set(activitiesList.map(a => Number(a.project_id)))];
+    let result = [];
+    for (const pid of projectIds) {
+      const projNodes = rolledUpList.filter(n => Number(n.project_id) === pid);
+      result = [...result, ...flatten(projNodes, null, 0)];
+    }
+    return result;
   };
 
   // Handle deleting an activity
@@ -278,8 +362,8 @@ export default function App() {
 
   // Filter activities dynamically: in overall view, only show checked activities from the selector panel
   const displayActivities = selectedProjectId === 'overall'
-    ? activities.filter(act => selectedOverallActivities.includes(act.id))
-    : activities;
+    ? getFlattenedActivities(activities).filter(act => selectedOverallActivities.includes(act.id))
+    : getFlattenedActivities(activities.filter(act => Number(act.project_id) === Number(selectedProjectId)));
 
   // Filter activities by search term
   const filteredActivities = displayActivities.filter(act =>
@@ -327,6 +411,7 @@ export default function App() {
   };
 
   const gapResult = getGapCalculation();
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col w-full">
@@ -682,7 +767,7 @@ export default function App() {
                 {/* Scrollable list grouped by project */}
                 <div className="flex-1 overflow-y-auto pr-1 space-y-4 custom-scrollbar">
                   {projects.map(proj => {
-                    const projActs = activities.filter(a => Number(a.project_id) === Number(proj.id));
+                    const projActs = getFlattenedActivities(activities.filter(a => Number(a.project_id) === Number(proj.id)));
                     if (projActs.length === 0) return null;
 
                     const projActIds = projActs.map(a => a.id);
@@ -745,6 +830,7 @@ export default function App() {
                                 <label
                                   key={act.id}
                                   className="flex items-start gap-2 text-[11px] font-medium text-slate-600 hover:text-slate-800 cursor-pointer select-none leading-tight"
+                                  style={{ paddingLeft: `${(act.depth || 0) * 12}px` }}
                                 >
                                   <input
                                     type="checkbox"
@@ -752,7 +838,7 @@ export default function App() {
                                     onChange={handleToggleActivity}
                                     className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-3 h-3 mt-0.5 cursor-pointer"
                                   />
-                                  <span className="truncate" title={act.activity_name}>
+                                  <span className={act.is_group ? "font-bold text-slate-700 truncate" : "truncate"} title={act.activity_name}>
                                     {act.activity_name}
                                   </span>
                                 </label>
@@ -778,6 +864,8 @@ export default function App() {
                 onMoveActivity={handleMoveActivity}
                 onSortByPlannedStart={handleSortByPlannedStart}
                 isOverallView={selectedProjectId === 'overall'}
+                collapsedGroups={collapsedGroups}
+                onToggleGroupCollapse={toggleGroupCollapse}
               />
             </div>
           </div>
@@ -792,6 +880,9 @@ export default function App() {
               onMoveActivity={handleMoveActivity}
               onSortByPlannedStart={handleSortByPlannedStart}
               isOverallView={selectedProjectId === 'overall'}
+              collapsedGroups={collapsedGroups}
+              onToggleGroupCollapse={toggleGroupCollapse}
+              parentGroups={activities.filter(a => a.is_group)}
             />
           </div>
 
@@ -803,6 +894,7 @@ export default function App() {
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSubmit={handleAddActivity}
+        parentGroups={activities.filter(a => a.is_group)}
       />
 
       {/* 7. DUPLICATE ACTIVITY MODAL */}

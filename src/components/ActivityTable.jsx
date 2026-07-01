@@ -8,7 +8,10 @@ export default function ActivityTable({
   onDuplicateClick,
   onMoveActivity,
   onSortByPlannedStart,
-  isOverallView 
+  isOverallView,
+  collapsedGroups,
+  onToggleGroupCollapse,
+  parentGroups
 }) {
   // Track which activity is currently being edited inline
   const [editingId, setEditingId] = useState(null);
@@ -19,14 +22,18 @@ export default function ActivityTable({
   const [planEnd, setPlanEnd] = useState('');
   const [actualStart, setActualStart] = useState('');
   const [actualEnd, setActualEnd] = useState('');
+  const [isGroup, setIsGroup] = useState(false);
+  const [parentId, setParentId] = useState(null);
 
   const startInlineEdit = (act) => {
     setEditingId(act.id);
     setActivityName(act.activity_name);
-    setPlanStart(act.plan_start);
-    setPlanEnd(act.plan_end);
+    setPlanStart(act.plan_start || '');
+    setPlanEnd(act.plan_end || '');
     setActualStart(act.actual_start || '');
     setActualEnd(act.actual_end || '');
+    setIsGroup(act.is_group || false);
+    setParentId(act.parent_id || null);
   };
 
   const cancelInlineEdit = () => {
@@ -36,6 +43,8 @@ export default function ActivityTable({
     setPlanEnd('');
     setActualStart('');
     setActualEnd('');
+    setIsGroup(false);
+    setParentId(null);
   };
 
   const handleSave = async (id) => {
@@ -44,17 +53,19 @@ export default function ActivityTable({
       alert('Activity Name is required.');
       return;
     }
-    if (!planStart) {
-      alert('Planned Start Date is required.');
-      return;
-    }
-    if (!planEnd) {
-      alert('Planned End Date is required.');
-      return;
-    }
-    if (new Date(planEnd) < new Date(planStart)) {
-      alert('Planned End Date cannot be earlier than Planned Start Date.');
-      return;
+    if (!isGroup) {
+      if (!planStart) {
+        alert('Planned Start Date is required.');
+        return;
+      }
+      if (!planEnd) {
+        alert('Planned End Date is required.');
+        return;
+      }
+      if (new Date(planEnd) < new Date(planStart)) {
+        alert('Planned End Date cannot be earlier than Planned Start Date.');
+        return;
+      }
     }
 
     // Actual validations
@@ -67,7 +78,7 @@ export default function ActivityTable({
       return;
     }
 
-    const success = await onUpdateActivity(id, activityName.trim(), planStart, planEnd, actualStart, actualEnd);
+    const success = await onUpdateActivity(id, activityName.trim(), planStart, planEnd, actualStart, actualEnd, isGroup, parentId);
     if (success) {
       setEditingId(null);
     }
@@ -219,28 +230,70 @@ export default function ActivityTable({
             ) : (
               activities.map((act, idx) => {
                 const isEditing = editingId === act.id;
+                const isCollapsed = collapsedGroups?.includes(act.id);
 
                 return (
-                  <tr key={act.id} className="hover:bg-slate-50/40 transition-colors duration-150">
+                  <tr 
+                    key={act.id} 
+                    className={`hover:bg-slate-50/40 transition-colors duration-150 ${
+                      act.is_group ? 'bg-slate-50/40 font-bold' : ''
+                    }`}
+                  >
                     
                     {/* Activity Name (Editable) */}
-                    <td className="px-6 py-4 font-semibold text-slate-800">
+                    <td 
+                      className="px-6 py-4 font-semibold text-slate-800"
+                      style={{ paddingLeft: `${24 + (act.depth || 0) * 16}px` }}
+                    >
                       {isEditing ? (
-                        <input
-                          type="text"
-                          value={activityName}
-                          onChange={(e) => setActivityName(e.target.value)}
-                          className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 w-full max-w-[280px]"
-                          required
-                        />
+                        <div className="flex flex-col gap-1.5 w-full max-w-[280px]">
+                          <input
+                            type="text"
+                            value={activityName}
+                            onChange={(e) => setActivityName(e.target.value)}
+                            className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 w-full"
+                            required
+                          />
+                          {/* Parent group select dropdown */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Parent Category</span>
+                            <select
+                              value={parentId || ''}
+                              onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
+                              className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-700 focus:outline-hidden focus:border-teal-500 w-full"
+                            >
+                              <option value="">No Parent (Top Level)</option>
+                              {(parentGroups || [])
+                                .filter(g => Number(g.id) !== Number(act.id))
+                                .map(grp => (
+                                  <option key={grp.id} value={grp.id}>{grp.activity_name}</option>
+                                ))}
+                            </select>
+                          </div>
+                        </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
+                          {act.is_group && (
+                            <button
+                              type="button"
+                              onClick={() => onToggleGroupCollapse(act.id)}
+                              className="p-0.5 hover:bg-slate-250 rounded text-slate-400 hover:text-slate-650 transition-colors mr-0.5 cursor-pointer flex-shrink-0"
+                            >
+                              {isCollapsed ? (
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          )}
                           {isOverallView && act.project_name && (
                             <span className="flex-shrink-0 text-teal-600 font-extrabold bg-teal-50 border border-teal-200/60 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">
                               {act.project_name}
                             </span>
                           )}
-                          <span className="truncate">{act.activity_name}</span>
+                          <span className={act.is_group ? "font-extrabold text-slate-800 truncate" : "truncate"}>
+                            {act.activity_name}
+                          </span>
                         </div>
                       )}
                     </td>
@@ -248,43 +301,55 @@ export default function ActivityTable({
                     {/* Planned Schedule Range (Editable) */}
                     <td className="px-6 py-4">
                       {isEditing ? (
-                        <div className="flex flex-col gap-1.5 max-w-[150px]">
-                          <input
-                            type="date"
-                            value={planStart}
-                            onChange={(e) => setPlanStart(e.target.value)}
-                            className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-[11px] text-slate-700 focus:outline-hidden focus:border-teal-500 w-full"
-                            required
-                          />
-                          <input
-                            type="date"
-                            value={planEnd}
-                            onChange={(e) => setPlanEnd(e.target.value)}
-                            className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-[11px] text-slate-700 focus:outline-hidden focus:border-teal-500 w-full"
-                            required
-                          />
-                        </div>
+                        isGroup ? (
+                          <span className="text-xs text-slate-400 italic font-medium">Auto-calculated</span>
+                        ) : (
+                          <div className="flex flex-col gap-1.5 max-w-[150px]">
+                            <input
+                              type="date"
+                              value={planStart}
+                              onChange={(e) => setPlanStart(e.target.value)}
+                              className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-[11px] text-slate-700 focus:outline-hidden focus:border-teal-500 w-full"
+                              required
+                            />
+                            <input
+                              type="date"
+                              value={planEnd}
+                              onChange={(e) => setPlanEnd(e.target.value)}
+                              className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-[11px] text-slate-700 focus:outline-hidden focus:border-teal-500 w-full"
+                              required
+                            />
+                          </div>
+                        )
                       ) : (
-                        <div className="flex flex-col gap-0.5 text-xs">
-                          <span className="font-medium text-slate-600">
-                            {formatDate(act.plan_start)}
-                          </span>
-                          <span className="text-slate-400">
-                            to {formatDate(act.plan_end)}
-                          </span>
-                        </div>
+                        act.plan_start && act.plan_end ? (
+                          <div className="flex flex-col gap-0.5 text-xs">
+                            <span className="font-medium text-slate-600">
+                              {formatDate(act.plan_start)}
+                            </span>
+                            <span className="text-slate-400">
+                              to {formatDate(act.plan_end)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 font-normal">—</span>
+                        )
                       )}
                     </td>
 
                     {/* Actual Start Date (Editable) */}
                     <td className="px-6 py-4">
                       {isEditing ? (
-                        <input
-                          type="date"
-                          value={actualStart}
-                          onChange={(e) => setActualStart(e.target.value)}
-                          className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 w-full max-w-[150px]"
-                        />
+                        isGroup ? (
+                          <span className="text-xs text-slate-400 italic font-medium">Auto-calculated</span>
+                        ) : (
+                          <input
+                            type="date"
+                            value={actualStart}
+                            onChange={(e) => setActualStart(e.target.value)}
+                            className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 w-full max-w-[150px]"
+                          />
+                        )
                       ) : (
                         <span className="font-medium text-slate-700">
                           {formatDate(act.actual_start)}
@@ -295,14 +360,18 @@ export default function ActivityTable({
                     {/* Actual End Date (Editable) */}
                     <td className="px-6 py-4">
                       {isEditing ? (
-                        <input
-                          type="date"
-                          value={actualEnd}
-                          onChange={(e) => setActualEnd(e.target.value)}
-                          className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 w-full max-w-[150px]"
-                          disabled={!actualStart} // disable end date input if start is empty
-                          placeholder={!actualStart ? 'Set start first' : ''}
-                        />
+                        isGroup ? (
+                          <span className="text-xs text-slate-400 italic font-medium">Auto-calculated</span>
+                        ) : (
+                          <input
+                            type="date"
+                            value={actualEnd}
+                            onChange={(e) => setActualEnd(e.target.value)}
+                            className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 w-full max-w-[150px]"
+                            disabled={!actualStart} // disable end date input if start is empty
+                            placeholder={!actualStart ? 'Set start first' : ''}
+                          />
+                        )
                       ) : (
                         <span className="font-medium text-slate-700">
                           {formatDate(act.actual_end)}

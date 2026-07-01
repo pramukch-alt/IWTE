@@ -2,8 +2,8 @@ import { supabase } from './supabaseClient'
 import { initialProjects, initialActivities } from './mockData'
 
 // Constants for local storage keys
-const PROJECTS_KEY = 'wte_projects_v3'
-const ACTIVITIES_KEY = 'wte_activities_v3'
+const PROJECTS_KEY = 'wte_projects_v4'
+const ACTIVITIES_KEY = 'wte_activities_v4'
 
 // In-memory session fallback in case localStorage is blocked/unavailable (e.g. security settings, iframe sandbox)
 const memoryStore = {
@@ -122,7 +122,7 @@ export const dbService = {
   },
 
   // 3. Insert a new activity
-  async addActivity(projectId, activityName, planStart, planEnd) {
+  async addActivity(projectId, activityName, planStart, planEnd, isGroup = false, parentId = null) {
     const pid = Number(projectId)
     if (supabase) {
       // Find current maximum sort_order for this project
@@ -141,10 +141,12 @@ export const dbService = {
           {
             project_id: pid,
             activity_name: activityName,
-            plan_start: planStart,
-            plan_end: planEnd,
+            plan_start: planStart || null,
+            plan_end: planEnd || null,
             actual_start: null,
             actual_end: null,
+            is_group: isGroup,
+            parent_id: parentId ? Number(parentId) : null,
             sort_order: maxSort + 1
           }
         ])
@@ -165,10 +167,12 @@ export const dbService = {
           id: newId,
           project_id: pid,
           activity_name: activityName,
-          plan_start: planStart,
-          plan_end: planEnd,
+          plan_start: planStart || null,
+          plan_end: planEnd || null,
           actual_start: null,
           actual_end: null,
+          is_group: isGroup,
+          parent_id: parentId ? Number(parentId) : null,
           sort_order: maxSort + 1,
           created_at: new Date().toISOString()
         }
@@ -183,7 +187,7 @@ export const dbService = {
   },
 
   // 4. Update an activity's details (both plan and actual dates/names)
-  async updateActivity(activityId, name, planStart, planEnd, actualStart, actualEnd) {
+  async updateActivity(activityId, name, planStart, planEnd, actualStart, actualEnd, isGroup = false, parentId = null) {
     const aid = Number(activityId)
     // Normalize empty strings or empty values to null
     const normActualStart = actualStart && actualStart !== '' ? actualStart : null
@@ -194,10 +198,12 @@ export const dbService = {
         .from('activities')
         .update({
           activity_name: name,
-          plan_start: planStart,
-          plan_end: planEnd,
+          plan_start: planStart || null,
+          plan_end: planEnd || null,
           actual_start: normActualStart,
-          actual_end: normActualEnd
+          actual_end: normActualEnd,
+          is_group: isGroup,
+          parent_id: parentId ? Number(parentId) : null
         })
         .eq('id', aid)
         .select()
@@ -212,10 +218,12 @@ export const dbService = {
         const updatedActivity = {
           ...activities[index],
           activity_name: name,
-          plan_start: planStart,
-          plan_end: planEnd,
+          plan_start: planStart || null,
+          plan_end: planEnd || null,
           actual_start: normActualStart,
-          actual_end: normActualEnd
+          actual_end: normActualEnd,
+          is_group: isGroup,
+          parent_id: parentId ? Number(parentId) : null
         }
         activities[index] = updatedActivity
         safeStorage.setItem(ACTIVITIES_KEY, JSON.stringify(activities))
@@ -248,7 +256,9 @@ export const dbService = {
         plan_start: source.plan_start,
         plan_end: source.plan_end,
         actual_start: null,
-        actual_end: null
+        actual_end: null,
+        is_group: source.is_group || false,
+        parent_id: null
       }))
 
       const { error: insertError } = await supabase
@@ -273,6 +283,8 @@ export const dbService = {
             plan_end: source.plan_end,
             actual_start: null,
             actual_end: null,
+            is_group: source.is_group || false,
+            parent_id: null,
             created_at: new Date().toISOString()
           })
         })
