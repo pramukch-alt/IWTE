@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Edit2, Check, X, Calendar, AlertCircle, CheckCircle, Play, Copy, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, Edit2, Check, X, Calendar, AlertCircle, CheckCircle, Play, Copy, ChevronUp, ChevronDown, ArrowDownAZ } from 'lucide-react';
 
 export default function ActivityTable({ 
   activities, 
@@ -7,6 +7,7 @@ export default function ActivityTable({
   onDeleteActivity, 
   onDuplicateClick,
   onMoveActivity,
+  onSortByPlannedStart,
   isOverallView 
 }) {
   // Track which activity is currently being edited inline
@@ -136,6 +137,37 @@ export default function ActivityTable({
     });
   };
 
+  // Helper to calculate planned and actual durations in days
+  const getDurationString = (act) => {
+    // Planned Duration
+    const planStart = new Date(act.plan_start);
+    const planEnd = new Date(act.plan_end);
+    const planDays = Math.round((planEnd - planStart) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Actual Duration
+    let actualDaysStr = '—';
+    if (act.actual_start) {
+      const actStart = new Date(act.actual_start);
+      if (act.actual_end) {
+        const actEnd = new Date(act.actual_end);
+        const days = Math.round((actEnd - actStart) / (1000 * 60 * 60 * 24)) + 1;
+        actualDaysStr = `${days} Days`;
+      } else {
+        // In progress (active since actual_start up to current date 2026-06-26)
+        const today = new Date('2026-06-26');
+        const days = Math.round((today - actStart) / (1000 * 60 * 60 * 24)) + 1;
+        actualDaysStr = `${days} Days (Active)`;
+      }
+    }
+
+    return (
+      <div className="flex flex-col gap-0.5 text-xs">
+        <span className="font-semibold text-slate-700">Plan: <span className="font-normal text-slate-500">{planDays} Days</span></span>
+        <span className="font-semibold text-slate-700">Actual: <span className="font-normal text-slate-500">{actualDaysStr}</span></span>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
       
@@ -145,9 +177,22 @@ export default function ActivityTable({
           <h3 className="text-sm font-bold text-slate-800">Activity Schedule & Records</h3>
           <p className="text-xs text-slate-500 mt-0.5">Manage planned schedules, edit activity names/dates, and update actual progress.</p>
         </div>
-        <span className="text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200/50 px-2.5 py-1 rounded-md">
-          Total Activities: {activities.length}
-        </span>
+        <div className="flex items-center gap-3">
+          {/* Sort Button (Hidden in overall view) */}
+          {!isOverallView && onSortByPlannedStart && (
+            <button
+              onClick={onSortByPlannedStart}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer"
+              title="Sort activities chronologically by planned start date"
+            >
+              <ArrowDownAZ className="w-3.5 h-3.5 text-slate-400" />
+              Sort by Plan Start
+            </button>
+          )}
+          <span className="text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200/50 px-2.5 py-1 rounded-md">
+            Total Activities: {activities.length}
+          </span>
+        </div>
       </div>
 
       {/* Responsive Wrapper */}
@@ -159,6 +204,7 @@ export default function ActivityTable({
               <th className="px-6 py-3.5 font-bold">Planned Schedule</th>
               <th className="px-6 py-3.5 font-bold">Actual Start Date</th>
               <th className="px-6 py-3.5 font-bold">Actual End Date</th>
+              <th className="px-6 py-3.5 font-bold">Duration</th>
               <th className="px-6 py-3.5 font-bold">Status & Delay</th>
               <th className="px-6 py-3.5 text-right font-bold">Actions</th>
             </tr>
@@ -166,7 +212,7 @@ export default function ActivityTable({
           <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
             {activities.length === 0 ? (
               <tr>
-                <td colSpan="6" className="text-center py-8 text-slate-400">
+                <td colSpan="7" className="text-center py-8 text-slate-400">
                   No activities. Click "Add Activity" above to create one.
                 </td>
               </tr>
@@ -262,6 +308,11 @@ export default function ActivityTable({
                           {formatDate(act.actual_end)}
                         </span>
                       )}
+                    </td>
+
+                    {/* Duration */}
+                    <td className="px-6 py-4">
+                      {getDurationString(act)}
                     </td>
 
                     {/* Status Badge */}

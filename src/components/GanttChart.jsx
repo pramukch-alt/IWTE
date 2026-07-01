@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Calendar, ZoomIn, ZoomOut, AlertTriangle, CheckCircle, Clock, ChevronUp, ChevronDown } from 'lucide-react';
+import { Calendar, ZoomIn, ZoomOut, AlertTriangle, CheckCircle, Clock, ChevronUp, ChevronDown, ArrowDownAZ } from 'lucide-react';
 
 // Hardcoded current date based on system metadata: 2026-06-26
 const CURRENT_DATE = new Date('2026-06-26');
@@ -10,7 +10,9 @@ export default function GanttChart({
   onSelectActivity,
   zoom,
   setZoom,
-  onMoveActivity
+  onMoveActivity,
+  onSortByPlannedStart,
+  isOverallView
 }) {
   const timelineRef = useRef(null);
   const hasActivities = activities && activities.length > 0;
@@ -145,6 +147,18 @@ export default function GanttChart({
               <span>In Progress</span>
             </div>
           </div>
+
+          {/* Sort Button (Hidden in overall integrated view) */}
+          {!isOverallView && onSortByPlannedStart && (
+            <button
+              onClick={onSortByPlannedStart}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer"
+              title="Sort activities chronologically by planned start date"
+            >
+              <ArrowDownAZ className="w-3.5 h-3.5 text-slate-400" />
+              Sort by Plan Start
+            </button>
+          )}
 
           {/* Toggle buttons */}
           <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/60">

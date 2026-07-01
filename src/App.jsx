@@ -159,6 +159,25 @@ export default function App() {
     }
   };
 
+  // Automatically sort activities in ascending order of planned start date
+  const handleSortByPlannedStart = async () => {
+    if (selectedProjectId === 'overall') return;
+
+    // Sort by planned start date (earliest first)
+    const sorted = [...activities].sort((a, b) => new Date(a.plan_start) - new Date(b.plan_start));
+
+    // Optimistic local state update for a highly responsive UI
+    setActivities(sorted);
+
+    try {
+      await dbService.updateActivitiesOrder(sorted);
+    } catch (err) {
+      console.error('Error saving sorted activities order:', err);
+      // Revert if saving failed
+      fetchActivities();
+    }
+  };
+
   // Handle deleting an activity
   const handleDeleteActivity = async (id) => {
     try {
@@ -693,6 +712,8 @@ export default function App() {
                 zoom={zoom}
                 setZoom={setZoom}
                 onMoveActivity={handleMoveActivity}
+                onSortByPlannedStart={handleSortByPlannedStart}
+                isOverallView={selectedProjectId === 'overall'}
               />
             </div>
           </div>
@@ -705,6 +726,7 @@ export default function App() {
               onDeleteActivity={handleDeleteActivity}
               onDuplicateClick={handleStartDuplicate}
               onMoveActivity={handleMoveActivity}
+              onSortByPlannedStart={handleSortByPlannedStart}
               isOverallView={selectedProjectId === 'overall'}
             />
           </div>
