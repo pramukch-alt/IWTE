@@ -140,3 +140,7 @@ INSERT INTO activities (project_id, activity_name, plan_start, plan_end, actual_
 (6, 'DCS Calibration & Pre-commissioning', '2026-12-15', '2027-03-15', NULL, NULL),
 (6, 'Hot Trial Run & Power Production', '2027-03-16', '2027-05-15', NULL, NULL),
 (6, 'Commercial Operation Start', '2027-05-16', '2027-06-15', NULL, NULL);
+
+-- 5. Disable Row Level Security (RLS) to allow public access for this reporting tool
+ALTER TABLE projects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE activities DISABLE ROW LEVEL SECURITY;
