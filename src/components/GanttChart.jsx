@@ -21,10 +21,12 @@ export default function GanttChart({
 
   // 1. Calculate timeline range safely
   const dates = hasActivities ? activities.flatMap(act => {
-    const list = [new Date(act.plan_start), new Date(act.plan_end)];
+    const list = [];
+    if (act.plan_start) list.push(new Date(act.plan_start));
+    if (act.plan_end) list.push(new Date(act.plan_end));
     if (act.actual_start) list.push(new Date(act.actual_start));
     if (act.actual_end) list.push(new Date(act.actual_end));
-    return list;
+    return list.filter(d => !isNaN(d.getTime()));
   }) : [];
 
   const minDateVal = dates.length > 0 ? new Date(Math.min(...dates)) : CURRENT_DATE;
