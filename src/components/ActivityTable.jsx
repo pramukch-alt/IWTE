@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Edit2, Check, X, Calendar, AlertCircle, CheckCircle, Play, Copy, ChevronUp, ChevronDown, ArrowDownAZ } from 'lucide-react';
+import { Trash2, Edit2, Check, X, Calendar, AlertCircle, CheckCircle, Play, Copy, ChevronUp, ChevronDown, ChevronRight, ArrowDownAZ } from 'lucide-react';
 
 export default function ActivityTable({ 
   activities, 
