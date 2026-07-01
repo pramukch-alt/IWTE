@@ -17,7 +17,11 @@ import {
   Database,
   RefreshCw,
   SlidersHorizontal,
-  FolderKanban
+  FolderKanban,
+  Menu,
+  X,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 export default function App() {
@@ -36,6 +40,8 @@ export default function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
   const [activityToDuplicate, setActivityToDuplicate] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [expandedProjects, setExpandedProjects] = useState([1, 2, 3, 4, 5, 6, 7]);
 
   // Fetch projects on mount
   useEffect(() => {
@@ -178,6 +184,13 @@ export default function App() {
     }
   };
 
+  // Toggle project checklist collapse/expand state
+  const toggleProjectExpand = (projId) => {
+    setExpandedProjects(prev =>
+      prev.includes(projId) ? prev.filter(id => id !== projId) : [...prev, projId]
+    );
+  };
+
   // Handle deleting an activity
   const handleDeleteActivity = async (id) => {
     try {
@@ -316,137 +329,172 @@ export default function App() {
   const gapResult = getGapCalculation();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 flex flex-col w-full">
       
-      {/* 1. SIDEBAR NAVIGATION */}
-      <aside className="w-[280px] bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col border-r border-slate-800">
-        {/* Brand Header */}
-        <div className="px-6 py-6 border-b border-slate-800 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-teal-950/40">
-            <FolderKanban className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-black text-white tracking-wider leading-none">IWTE</h1>
-            <p className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-1">Integrated Progress Hub</p>
-          </div>
-        </div>
+      {/* 1. TOP NAVIGATION BAR */}
+      <header className="bg-slate-900 text-slate-300 px-6 py-4 flex items-center justify-between sticky top-0 z-40 border-b border-slate-800 shadow-md">
+        <div className="flex items-center gap-4">
+          
+          {/* Hamburger Menu Toggle */}
+          <div className="relative">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center border border-slate-700/30"
+              title="Select Project"
+            >
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
 
-        {/* Project Navigation Section */}
-        <div className="flex-1 px-4 py-6 flex flex-col gap-1.5 overflow-y-auto">
-          {/* Master Integration View */}
-          <button
-            onClick={() => setSelectedProjectId('overall')}
-            className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-left transition-all mb-3 border ${
-              selectedProjectId === 'overall'
-                ? 'bg-gradient-to-r from-teal-500/15 to-brand-500/15 text-white font-bold border-teal-500/35 shadow-xs'
-                : 'hover:bg-slate-800/50 hover:text-slate-200 border-transparent bg-slate-800/10 text-slate-400'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <LayoutDashboard className={`w-4 h-4 ${selectedProjectId === 'overall' ? 'text-teal-400' : 'text-slate-500'}`} />
-              <span className="text-sm tracking-wide">Overall IWTE Integration</span>
-            </div>
-            <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase tracking-widest">
-              Master
-            </span>
-          </button>
+            {/* Floating Dropdown Selector */}
+            {isMenuOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-30" 
+                  onClick={() => setIsMenuOpen(false)}
+                />
+                
+                <div className="absolute left-0 mt-3 w-80 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl py-4 px-3 flex flex-col gap-2 z-40">
+                  <div className="px-3 pb-2 border-b border-slate-800 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Select Dashboard</span>
+                    <span className="text-[9px] font-semibold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">7 Sites</span>
+                  </div>
+                  
+                  {/* Master View Link */}
+                  <button
+                    onClick={() => {
+                      setSelectedProjectId('overall');
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-left transition-all border ${
+                      selectedProjectId === 'overall'
+                        ? 'bg-gradient-to-r from-teal-500/15 to-brand-500/15 text-white font-bold border-teal-500/35 shadow-xs'
+                        : 'hover:bg-slate-800/50 hover:text-slate-200 border-transparent text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <LayoutDashboard className={`w-4 h-4 ${selectedProjectId === 'overall' ? 'text-teal-400' : 'text-slate-500'}`} />
+                      <span className="text-sm">Overall IWTE Integration</span>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase tracking-widest">
+                      Master
+                    </span>
+                  </button>
 
-          <div className="border-t border-slate-800/50 my-1.5"></div>
+                  <div className="border-t border-slate-800/50 my-1"></div>
 
-          <span className="text-[10px] font-bold text-slate-500 px-3 uppercase tracking-widest mb-2">
-            Individual Sites (6)
-          </span>
-
-          {projects.map((proj) => {
-            const isActive = selectedProjectId === proj.id;
-            
-            return (
-              <button
-                key={proj.id}
-                onClick={() => setSelectedProjectId(proj.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-left transition-all group ${
-                  isActive 
-                    ? 'bg-teal-500/10 text-white font-semibold border border-teal-500/20' 
-                    : 'hover:bg-slate-800/50 hover:text-slate-200 border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full transition-colors ${
-                    isActive ? 'bg-teal-400' : 'bg-slate-600 group-hover:bg-slate-400'
-                  }`}></div>
-                  <span className="text-sm tracking-wide">{proj.name} Project</span>
-                </div>
-
-                {/* Micro-metrics for sidebar */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-sm font-medium bg-slate-800 text-slate-400 border border-slate-700/50">
-                    51w
+                  <span className="text-[9px] font-bold text-slate-500 px-3 uppercase tracking-widest mb-1 block">
+                    Individual Projects
                   </span>
+
+                  {/* Scrollable list of individual sites */}
+                  <div className="max-h-[350px] overflow-y-auto flex flex-col gap-1 pr-1 custom-scrollbar">
+                    {projects.map((proj) => {
+                      const isActive = selectedProjectId === proj.id;
+                      return (
+                        <button
+                          key={proj.id}
+                          onClick={() => {
+                            setSelectedProjectId(proj.id);
+                            setIsMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left transition-all group border ${
+                            isActive 
+                              ? 'bg-teal-500/10 text-white font-semibold border-teal-500/20' 
+                              : 'hover:bg-slate-800/50 hover:text-slate-300 border-transparent text-slate-400'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full transition-colors ${
+                              isActive ? 'bg-teal-400' : 'bg-slate-600 group-hover:bg-slate-400'
+                            }`}></div>
+                            <span className="text-sm">{proj.name} Project</span>
+                          </div>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-sm font-medium bg-slate-800 text-slate-400 border border-slate-700/50">
+                            51w
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Database Status inside dropdown footer */}
+                  <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500 px-2">
+                    <div className="flex items-center gap-1.5">
+                      <Database className="w-3 h-3 text-teal-400" />
+                      <span>{dbService.isSupabaseActive() ? 'Supabase DB' : 'Local Sandbox'}</span>
+                    </div>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  </div>
                 </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Database Status Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <Database className="w-3.5 h-3.5 text-teal-400" />
-            <span className="font-semibold">
-              {dbService.isSupabaseActive() ? 'Supabase Database' : 'LocalStorage Sandbox'}
-            </span>
+              </>
+            )}
           </div>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        </div>
-      </aside>
 
-      {/* 2. MAIN HUB */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto">
+          {/* Logo and App Title */}
+          <div className="flex items-center gap-2.5 border-l border-slate-800 pl-4">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-teal-950/40">
+              <FolderKanban className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <h1 className="text-sm font-black text-white tracking-wider leading-none">IWTE</h1>
+              <p className="text-[8px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">Integrated Progress Hub</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Active Dashboard Title in Header */}
+        <div className="hidden md:flex items-center gap-2 bg-slate-800/30 px-4 py-1.5 rounded-xl border border-slate-800/50">
+          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Active Site:</span>
+          <span className="text-white text-xs font-bold bg-teal-500/10 text-teal-400 px-2 py-0.5 rounded border border-teal-500/20">
+            {selectedProjectId === 'overall' ? 'Overall Integrated Master' : `${projects.find(p => p.id === selectedProjectId)?.name} Project`}
+          </span>
+        </div>
+
+        {/* Action Controls in Header (Search & Add Activity) */}
+        <div className="flex items-center gap-3">
+          {/* Search bar inside top header */}
+          <div className="relative w-48 lg:w-56">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-800/60 border border-slate-700/60 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-300 placeholder-slate-500 focus:outline-hidden focus:bg-slate-850 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+            />
+          </div>
+
+          {/* Add Activity Button (Hidden in overall view) */}
+          {selectedProjectId !== 'overall' && (
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 rounded-xl border border-teal-700/15 shadow-xs transition-all cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Activity
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* 2. MAIN HUB (Full Width) */}
+      <main className="flex-1 flex flex-col w-full overflow-y-auto">
         
-        {/* Header Bar */}
-        <header className="bg-white border-b border-slate-200 px-8 py-4.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-xs">
-          <div>
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+        {/* Dashboard Area */}
+        <div className="p-8 flex flex-col gap-6 max-w-[1600px] w-full mx-auto flex-1">
+          {/* Compact Page Title Header */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-semibold uppercase tracking-wider">
               <span>IWTE Master Report</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-2.5 h-2.5" />
               <span className="text-slate-600 font-bold">
-                {selectedProjectId === 'overall' ? 'Overall Integrated' : `${projects.find(p => p.id === selectedProjectId)?.name} Site`} Dashboard
+                {selectedProjectId === 'overall' ? 'Overall Integrated' : `${projects.find(p => p.id === selectedProjectId)?.name} Site`}
               </span>
             </div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight mt-1">
+            <h2 className="text-lg font-black text-slate-900 tracking-tight">
               {selectedProjectId === 'overall' ? 'Overall IWTE Integrated Master' : projects.find(p => p.id === selectedProjectId)?.name} Waste-to-Energy Project Schedule
             </h2>
           </div>
-
-          {/* Action Row */}
-          <div className="flex items-center gap-4">
-            {/* Search */}
-            <div className="relative w-64">
-              <Search className="w-4.5 h-4.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Filter activities..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:bg-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-              />
-            </div>
-
-            {/* Add Activity Button (Hidden in integrated view as it requires project specification) */}
-            {selectedProjectId !== 'overall' && (
-              <button
-                onClick={() => setIsFormOpen(true)}
-                className="flex items-center gap-1.5 px-4.5 py-2 text-sm font-bold text-white bg-teal-600 hover:bg-teal-500 rounded-xl border border-teal-700/15 shadow-xs transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Add Activity
-              </button>
-            )}
-          </div>
-        </header>
-
-        {/* Dashboard Area */}
-        <div className="p-8 flex flex-col gap-6 max-w-[1600px] w-full mx-auto flex-1">
           
           {/* KPI Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
@@ -651,51 +699,67 @@ export default function App() {
 
                     return (
                       <div key={proj.id} className="space-y-2 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                        {/* Project Header Checkbox */}
-                        <label className="flex items-center gap-2 font-bold text-xs text-slate-700 cursor-pointer hover:text-teal-600 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={isAllSelected}
-                            ref={el => {
-                              if (el) el.indeterminate = isSomeSelected;
-                            }}
-                            onChange={handleToggleProject}
-                            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-3.5 h-3.5 cursor-pointer"
-                          />
-                          <span>{proj.name} Project</span>
-                          <span className="text-[9px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded-full ml-auto">
-                            {projActs.filter(a => selectedOverallActivities.includes(a.id)).length}/{projActs.length}
-                          </span>
-                        </label>
+                        {/* Project Header Checkbox & Collapse Toggle */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleProjectExpand(proj.id)}
+                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+                          >
+                            {expandedProjects.includes(proj.id) ? (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                          
+                          <label className="flex items-center gap-2 font-bold text-xs text-slate-700 cursor-pointer hover:text-teal-600 transition-colors flex-1 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isAllSelected}
+                              ref={el => {
+                                if (el) el.indeterminate = isSomeSelected;
+                              }}
+                              onChange={handleToggleProject}
+                              className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-3.5 h-3.5 cursor-pointer"
+                            />
+                            <span className="truncate">{proj.name} Project</span>
+                            <span className="text-[9px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded-full ml-auto">
+                              {projActs.filter(a => selectedOverallActivities.includes(a.id)).length}/{projActs.length}
+                            </span>
+                          </label>
+                        </div>
 
                         {/* Sub-activities List */}
-                        <div className="pl-5.5 space-y-1.5">
-                          {projActs.map(act => {
-                            const isChecked = selectedOverallActivities.includes(act.id);
-                            const handleToggleActivity = () => {
-                              setSelectedOverallActivities(prev =>
-                                isChecked ? prev.filter(id => id !== act.id) : [...prev, act.id]
-                              );
-                            };
+                        {expandedProjects.includes(proj.id) && (
+                          <div className="pl-6.5 space-y-1.5 animate-in fade-in duration-150">
+                            {projActs.map(act => {
+                              const isChecked = selectedOverallActivities.includes(act.id);
+                              const handleToggleActivity = () => {
+                                setSelectedOverallActivities(prev =>
+                                  isChecked ? prev.filter(id => id !== act.id) : [...prev, act.id]
+                                );
+                              };
 
-                            return (
-                              <label
-                                key={act.id}
-                                className="flex items-start gap-2 text-[11px] font-medium text-slate-600 hover:text-slate-800 cursor-pointer select-none leading-tight"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={handleToggleActivity}
-                                  className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-3 h-3 mt-0.5 cursor-pointer"
-                                />
-                                <span className="truncate" title={act.activity_name}>
-                                  {act.activity_name}
-                                </span>
-                              </label>
-                            );
-                          })}
-                        </div>
+                              return (
+                                <label
+                                  key={act.id}
+                                  className="flex items-start gap-2 text-[11px] font-medium text-slate-600 hover:text-slate-800 cursor-pointer select-none leading-tight"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={handleToggleActivity}
+                                    className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-3 h-3 mt-0.5 cursor-pointer"
+                                  />
+                                  <span className="truncate" title={act.activity_name}>
+                                    {act.activity_name}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
