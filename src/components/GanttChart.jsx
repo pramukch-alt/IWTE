@@ -38,10 +38,27 @@ export default function GanttChart({
 
   // Buffer: Ensure timeline has at least 3 months, and extends to cover CURRENT_DATE
   if (timelineStart > CURRENT_DATE) {
+    timelineStart.setFullYear(CURRENT_DATE.getFullYear());
     timelineStart.setMonth(CURRENT_DATE.getMonth() - 1);
+  } else {
+    // Ensure at least 1 month buffer before CURRENT_DATE
+    const minStartLimit = new Date(CURRENT_DATE.getFullYear(), CURRENT_DATE.getMonth() - 1, 1);
+    if (timelineStart > minStartLimit) {
+      timelineStart.setMonth(minStartLimit.getMonth());
+      timelineStart.setFullYear(minStartLimit.getFullYear());
+    }
   }
+
   if (timelineEnd < CURRENT_DATE) {
+    timelineEnd.setFullYear(CURRENT_DATE.getFullYear());
     timelineEnd.setMonth(CURRENT_DATE.getMonth() + 2);
+  } else {
+    // Ensure at least 2 months buffer after CURRENT_DATE
+    const minEndLimit = new Date(CURRENT_DATE.getFullYear(), CURRENT_DATE.getMonth() + 2, 0);
+    if (timelineEnd < minEndLimit) {
+      timelineEnd.setMonth(minEndLimit.getMonth());
+      timelineEnd.setFullYear(minEndLimit.getFullYear());
+    }
   }
 
   const totalTimeMs = timelineEnd.getTime() - timelineStart.getTime();
@@ -364,7 +381,7 @@ export default function GanttChart({
                     <div className="flex items-center gap-2.5 text-[10px] text-slate-400 font-medium">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3 flex-shrink-0" />
-                        Plan: {new Date(act.plan_start).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
+                        Plan: {act.plan_start ? new Date(act.plan_start).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : '—'}
                       </span>
                       {isDelayed && (
                         <span className="flex items-center gap-0.5 text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded-sm">
