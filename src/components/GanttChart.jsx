@@ -12,7 +12,9 @@ export default function GanttChart({
   setZoom,
   onMoveActivity,
   onSortByPlannedStart,
-  isOverallView
+  isOverallView,
+  collapsedGroups,
+  onToggleGroupCollapse
 }) {
   const timelineRef = useRef(null);
   const hasActivities = activities && activities.length > 0;
