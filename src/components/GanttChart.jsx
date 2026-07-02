@@ -345,6 +345,10 @@ export default function GanttChart({
                               {act.project_name}
                             </span>
                           )}
+                          <span 
+                            className="w-2 h-2 rounded-full flex-shrink-0 border border-slate-200/40 shadow-3xs"
+                            style={{ backgroundColor: act.color || '#0D9488' }}
+                          />
                           <span className="truncate">{act.activity_name}</span>
                         </span>
                       </div>
@@ -453,18 +457,22 @@ export default function GanttChart({
                         </>
                       ) : (
                         <>
-                          {/* PLAN BAR (Top Bar - Soft slate-blue/gray) */}
+                          {/* PLAN BAR (Top Bar - Custom Color with Opacity) */}
                           {act.plan_start && act.plan_end && (
                             <div
                               style={{
                                 left: `${planStartPercent}%`,
-                                width: `${planWidthPercent}%`
+                                width: `${planWidthPercent}%`,
+                                backgroundColor: `${act.color || '#cbd5e1'}cc`,
+                                borderColor: act.color || '#cbd5e1'
                               }}
                               title={`[Plan] ${act.activity_name}\nStart: ${act.plan_start}\nEnd: ${act.plan_end}`}
-                              className={`absolute top-0 h-4 rounded-md bg-slate-300/80 border border-slate-400/20 group-hover:bg-slate-300 transition-all z-2 shadow-xs`}
+                              className={`absolute top-0 h-4 rounded-md border group-hover:opacity-90 transition-all z-2 shadow-xs`}
                             >
                               <div className="w-full h-full flex items-center px-2 overflow-hidden">
-                                <span className="text-[9px] font-bold text-slate-700 truncate select-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className={`text-[9px] font-bold truncate select-none opacity-0 group-hover:opacity-100 transition-opacity ${
+                                  act.color === '#F6BB00' ? 'text-slate-800' : 'text-white'
+                                }`}>
                                   Plan
                                 </span>
                               </div>
@@ -476,13 +484,17 @@ export default function GanttChart({
                             <div
                               style={{
                                 left: `${actualStartPercent}%`,
-                                width: `${actualWidthPercent}%`
+                                width: `${actualWidthPercent}%`,
+                                ...(isDelayed ? {} : {
+                                  backgroundColor: act.color || '#0d9488',
+                                  borderColor: act.color || '#0d9488'
+                                })
                               }}
                               title={`[Actual] ${act.activity_name}\nStart: ${act.actual_start}\nEnd: ${act.actual_end || 'In Progress'}\nStatus: ${isInProgress ? 'In Progress' : 'Completed'}`}
                               className={`absolute bottom-0 h-[18px] rounded-md transition-all z-2 shadow-xs border flex items-center justify-between px-2 overflow-hidden ${
                                 isDelayed
                                   ? 'bg-rose-500/90 text-white border-rose-600/30 hover:bg-rose-500'
-                                  : 'bg-teal-500/95 text-white border-teal-600/30 hover:bg-teal-500'
+                                  : 'text-white hover:opacity-95'
                               } ${isInProgress ? 'border-dashed border-2 animate-pulse-subtle' : ''}`}
                             >
                               {/* Inner status and label */}

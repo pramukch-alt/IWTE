@@ -2,8 +2,8 @@ import { supabase } from './supabaseClient'
 import { initialProjects, initialActivities } from './mockData'
 
 // Constants for local storage keys
-const PROJECTS_KEY = 'wte_projects_v4'
-const ACTIVITIES_KEY = 'wte_activities_v4'
+const PROJECTS_KEY = 'wte_projects_v5'
+const ACTIVITIES_KEY = 'wte_activities_v5'
 
 // In-memory session fallback in case localStorage is blocked/unavailable (e.g. security settings, iframe sandbox)
 const memoryStore = {
@@ -122,7 +122,7 @@ export const dbService = {
   },
 
   // 3. Insert a new activity
-  async addActivity(projectId, activityName, planStart, planEnd, isGroup = false, parentId = null) {
+  async addActivity(projectId, activityName, planStart, planEnd, isGroup = false, parentId = null, color = '#0D9488') {
     const pid = Number(projectId)
     if (supabase) {
       // Find current maximum sort_order for this project
@@ -147,7 +147,8 @@ export const dbService = {
             actual_end: null,
             is_group: isGroup,
             parent_id: parentId ? Number(parentId) : null,
-            sort_order: maxSort + 1
+            sort_order: maxSort + 1,
+            color: color
           }
         ])
         .select()
@@ -174,6 +175,7 @@ export const dbService = {
           is_group: isGroup,
           parent_id: parentId ? Number(parentId) : null,
           sort_order: maxSort + 1,
+          color: color,
           created_at: new Date().toISOString()
         }
         activities.push(newActivity)
@@ -187,7 +189,7 @@ export const dbService = {
   },
 
   // 4. Update an activity's details (both plan and actual dates/names)
-  async updateActivity(activityId, name, planStart, planEnd, actualStart, actualEnd, isGroup = false, parentId = null) {
+  async updateActivity(activityId, name, planStart, planEnd, actualStart, actualEnd, isGroup = false, parentId = null, color = '#0D9488') {
     const aid = Number(activityId)
     // Normalize empty strings or empty values to null
     const normActualStart = actualStart && actualStart !== '' ? actualStart : null
@@ -203,7 +205,8 @@ export const dbService = {
           actual_start: normActualStart,
           actual_end: normActualEnd,
           is_group: isGroup,
-          parent_id: parentId ? Number(parentId) : null
+          parent_id: parentId ? Number(parentId) : null,
+          color: color
         })
         .eq('id', aid)
         .select()
@@ -223,7 +226,8 @@ export const dbService = {
           actual_start: normActualStart,
           actual_end: normActualEnd,
           is_group: isGroup,
-          parent_id: parentId ? Number(parentId) : null
+          parent_id: parentId ? Number(parentId) : null,
+          color: color
         }
         activities[index] = updatedActivity
         safeStorage.setItem(ACTIVITIES_KEY, JSON.stringify(activities))
@@ -258,7 +262,8 @@ export const dbService = {
         actual_start: null,
         actual_end: null,
         is_group: source.is_group || false,
-        parent_id: null
+        parent_id: null,
+        color: source.color || '#0D9488'
       }))
 
       const { error: insertError } = await supabase
@@ -285,6 +290,7 @@ export const dbService = {
             actual_end: null,
             is_group: source.is_group || false,
             parent_id: null,
+            color: source.color || '#0D9488',
             created_at: new Date().toISOString()
           })
         })

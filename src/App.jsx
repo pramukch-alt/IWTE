@@ -97,9 +97,9 @@ export default function App() {
   }, [selectedProjectId]);
 
   // Handle adding a new activity
-  const handleAddActivity = async (name, start, end, isGroup = false, parentId = null) => {
+  const handleAddActivity = async (name, start, end, isGroup = false, parentId = null, color = '#0D9488') => {
     try {
-      await dbService.addActivity(selectedProjectId, name, start, end, isGroup, parentId);
+      await dbService.addActivity(selectedProjectId, name, start, end, isGroup, parentId, color);
       await fetchActivities(); // refresh lists
     } catch (err) {
       console.error('Error adding activity:', err);
@@ -108,9 +108,9 @@ export default function App() {
   };
 
   // Handle updating activity details (both plan and actual)
-  const handleUpdateActivity = async (id, name, planStart, planEnd, start, end, isGroup = false, parentId = null) => {
+  const handleUpdateActivity = async (id, name, planStart, planEnd, start, end, isGroup = false, parentId = null, color = '#0D9488') => {
     try {
-      await dbService.updateActivity(id, name, planStart, planEnd, start, end, isGroup, parentId);
+      await dbService.updateActivity(id, name, planStart, planEnd, start, end, isGroup, parentId, color);
       await fetchActivities(); // refresh lists
       return true;
     } catch (err) {

@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { Trash2, Edit2, Check, X, Calendar, AlertCircle, CheckCircle, Play, Copy, ChevronUp, ChevronDown, ChevronRight, ArrowDownAZ } from 'lucide-react';
 
+const PALETTE_COLORS = [
+  { hex: '#5648E0', name: 'Blue' },
+  { hex: '#D5250D', name: 'Red' },
+  { hex: '#F6BB00', name: 'Yellow' },
+  { hex: '#0D9488', name: 'Teal' }
+];
+
 export default function ActivityTable({ 
   activities, 
   onUpdateActivity, 
@@ -24,6 +31,7 @@ export default function ActivityTable({
   const [actualEnd, setActualEnd] = useState('');
   const [isGroup, setIsGroup] = useState(false);
   const [parentId, setParentId] = useState(null);
+  const [color, setColor] = useState('#0D9488');
 
   const startInlineEdit = (act) => {
     setEditingId(act.id);
@@ -34,6 +42,7 @@ export default function ActivityTable({
     setActualEnd(act.actual_end || '');
     setIsGroup(act.is_group || false);
     setParentId(act.parent_id || null);
+    setColor(act.color || '#0D9488');
   };
 
   const cancelInlineEdit = () => {
@@ -45,6 +54,7 @@ export default function ActivityTable({
     setActualEnd('');
     setIsGroup(false);
     setParentId(null);
+    setColor('#0D9488');
   };
 
   const handleSave = async (id) => {
@@ -78,7 +88,7 @@ export default function ActivityTable({
       return;
     }
 
-    const success = await onUpdateActivity(id, activityName.trim(), planStart, planEnd, actualStart, actualEnd, isGroup, parentId);
+    const success = await onUpdateActivity(id, activityName.trim(), planStart, planEnd, actualStart, actualEnd, isGroup, parentId, color);
     if (success) {
       setEditingId(null);
     }
@@ -270,6 +280,30 @@ export default function ActivityTable({
                                 ))}
                             </select>
                           </div>
+                          {/* Inline Color selector */}
+                          <div className="flex flex-col gap-1 mt-1">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Color</span>
+                            <div className="flex items-center gap-2 bg-slate-50 p-1.5 border border-slate-200 rounded-lg">
+                              {PALETTE_COLORS.map(c => (
+                                <button
+                                  key={c.hex}
+                                  type="button"
+                                  onClick={() => setColor(c.hex)}
+                                  style={{ backgroundColor: c.hex }}
+                                  className={`w-4 h-4 rounded-full transition-all flex items-center justify-center hover:scale-110 cursor-pointer ${
+                                    color === c.hex
+                                      ? 'ring-2 ring-teal-500/20 scale-105 border border-white'
+                                      : 'border border-slate-300'
+                                  }`}
+                                  title={c.name}
+                                >
+                                  {color === c.hex && (
+                                    <span className="w-1 h-1 bg-white rounded-full" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
@@ -291,6 +325,10 @@ export default function ActivityTable({
                               {act.project_name}
                             </span>
                           )}
+                          <span 
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-slate-200/40 shadow-2xs" 
+                            style={{ backgroundColor: act.color || '#0D9488' }}
+                          />
                           <span className={act.is_group ? "font-extrabold text-slate-800 truncate" : "truncate"}>
                             {act.activity_name}
                           </span>

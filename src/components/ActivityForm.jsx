@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { X, Calendar, PlusCircle } from 'lucide-react';
 
+const PALETTE_COLORS = [
+  { hex: '#5648E0', name: 'Blue/Indigo' },
+  { hex: '#D5250D', name: 'Red' },
+  { hex: '#F6BB00', name: 'Yellow/Gold' },
+  { hex: '#0D9488', name: 'Teal (Default)' }
+];
+
 export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }) {
   const [activityName, setActivityName] = useState('');
   const [planStart, setPlanStart] = useState('');
   const [planEnd, setPlanEnd] = useState('');
   const [isGroup, setIsGroup] = useState(false);
   const [parentId, setParentId] = useState('');
+  const [color, setColor] = useState('#0D9488');
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
@@ -46,7 +54,8 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
       isGroup ? null : planStart, 
       isGroup ? null : planEnd, 
       isGroup, 
-      parentId ? Number(parentId) : null
+      parentId ? Number(parentId) : null,
+      color
     );
     
     // Reset form
@@ -55,6 +64,7 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
     setPlanEnd('');
     setIsGroup(false);
     setParentId('');
+    setColor('#0D9488');
     onClose();
   };
 
@@ -64,6 +74,7 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
     setPlanEnd('');
     setIsGroup(false);
     setParentId('');
+    setColor('#0D9488');
     onClose();
   };
 
@@ -179,6 +190,36 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
               </div>
             </div>
           )}
+
+          {/* Color Picker */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Activity Color
+            </label>
+            <div className="flex items-center gap-3 mt-1 bg-slate-50 p-3 border border-slate-200 rounded-xl">
+              {PALETTE_COLORS.map(c => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  onClick={() => setColor(c.hex)}
+                  style={{ backgroundColor: c.hex }}
+                  className={`w-7 h-7 rounded-full transition-all flex items-center justify-center hover:scale-110 cursor-pointer ${
+                    color === c.hex
+                      ? 'ring-3 ring-teal-500/30 scale-105 border-2 border-white shadow-sm'
+                      : 'border border-slate-300'
+                  }`}
+                  title={c.name}
+                >
+                  {color === c.hex && (
+                    <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                  )}
+                </button>
+              ))}
+              <span className="text-xs font-medium text-slate-500 ml-auto">
+                {PALETTE_COLORS.find(c => c.hex === color)?.name || 'Default'}
+              </span>
+            </div>
+          </div>
 
           {/* Form Actions */}
           <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
