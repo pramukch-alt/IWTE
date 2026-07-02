@@ -21,7 +21,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Printer
 } from 'lucide-react';
 
 export default function App() {
@@ -417,7 +418,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 flex flex-col w-full">
       
       {/* 1. TOP NAVIGATION BAR */}
-      <header className="bg-slate-900 text-slate-300 px-6 py-4 flex items-center justify-between sticky top-0 z-40 border-b border-slate-800 shadow-md">
+      <header className="bg-slate-900 text-slate-300 px-6 py-4 flex items-center justify-between sticky top-0 z-40 border-b border-slate-800 shadow-md print:hidden">
         <div className="flex items-center gap-4">
           
           {/* Hamburger Menu Toggle */}
@@ -549,6 +550,16 @@ export default function App() {
             />
           </div>
 
+          {/* Print Button */}
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/80 rounded-xl shadow-xs transition-all cursor-pointer"
+            title="Print Gantt Chart (A3 Landscape)"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-400" />
+            Print
+          </button>
+
           {/* Add Activity Button (Hidden in overall view) */}
           {selectedProjectId !== 'overall' && (
             <button
@@ -566,23 +577,41 @@ export default function App() {
       <main className="flex-1 flex flex-col w-full overflow-y-auto">
         
         {/* Dashboard Area */}
-        <div className="p-8 flex flex-col gap-6 max-w-[1600px] w-full mx-auto flex-1">
+        <div className="p-8 flex flex-col gap-6 max-w-[1600px] w-full mx-auto flex-1 print:p-0 print:gap-4 print:max-w-none">
+          {/* Print Header (Only visible when printing) */}
+          <div className="hidden print:block mb-6 border-b-2 border-slate-300 pb-4">
+            <div className="flex items-baseline justify-between">
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+                {selectedProjectId === 'overall' 
+                  ? 'Overall IWTE Integrated Master Schedule' 
+                  : `${projects.find(p => Number(p.id) === Number(selectedProjectId))?.name || ''} Project Schedule`}
+              </h1>
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                IWTE Progress Report
+              </span>
+            </div>
+            <div className="flex items-center gap-6 mt-3 text-xs text-slate-500 font-semibold">
+              <div>Report Date: <span className="font-bold">{new Date().toLocaleDateString('en-US', { dateStyle: 'long' })}</span></div>
+              <div>Database Status: <span className="font-bold">{dbService.isSupabaseActive() ? 'Live Supabase DB' : 'Local Sandbox'}</span></div>
+            </div>
+          </div>
+
           {/* Compact Page Title Header */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 print:hidden">
             <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-semibold uppercase tracking-wider">
               <span>IWTE Master Report</span>
               <ArrowRight className="w-2.5 h-2.5" />
               <span className="text-slate-600 font-bold">
-                {selectedProjectId === 'overall' ? 'Overall Integrated' : `${projects.find(p => p.id === selectedProjectId)?.name} Site`}
+                {selectedProjectId === 'overall' ? 'Overall Integrated' : `${projects.find(p => Number(p.id) === Number(selectedProjectId))?.name || ''} Site`}
               </span>
             </div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight">
-              {selectedProjectId === 'overall' ? 'Overall IWTE Integrated Master' : projects.find(p => p.id === selectedProjectId)?.name} Waste-to-Energy Project Schedule
+              {selectedProjectId === 'overall' ? 'Overall IWTE Integrated Master' : projects.find(p => Number(p.id) === Number(selectedProjectId))?.name} Waste-to-Energy Project Schedule
             </h2>
           </div>
           
           {/* KPI Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5 print:hidden">
             
             {/* KPI 1: Overall Progress */}
             <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs flex flex-col justify-between gap-3">
@@ -654,7 +683,7 @@ export default function App() {
           </div>
 
           {/* 3. ACTIVITY GAP MEASUREMENT PANEL */}
-          <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs flex flex-col gap-4">
+          <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs flex flex-col gap-4 print:hidden">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-5 h-5 text-brand-600" />
@@ -871,7 +900,7 @@ export default function App() {
           </div>
 
           {/* 5. DATA MANAGEMENT TABLE */}
-          <div className="mb-8">
+          <div className="mb-8 print:hidden">
             <ActivityTable
               activities={filteredActivities}
               onUpdateActivity={handleUpdateActivity}

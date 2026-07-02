@@ -47,3 +47,56 @@
 .animate-pulse-subtle {
   animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Print Media Queries for A3 Landscape Print Layout */
+@media print {
+  @page {
+    size: A3 landscape;
+    margin: 15mm 10mm 15mm 10mm;
+  }
+
+  body, html, #root {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Force scrollable containers to expand fully without scrolling */
+  .custom-scrollbar,
+  .overflow-x-auto,
+  .overflow-y-auto {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  /* Hide print-unfriendly elements */
+  .no-print,
+  .print-hide,
+  header,
+  aside,
+  button,
+  .kpi-section,
+  .gap-analyzer,
+  .overall-selector,
+  .activity-table-section,
+  .form-actions {
+    display: none !important;
+  }
+
+  /* Reset margins/paddings on printed page wrappers */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+  }
+
+  .print-container-padding {
+    padding: 0 !important;
+  }
+}
+

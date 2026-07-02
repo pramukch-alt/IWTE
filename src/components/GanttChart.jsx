@@ -173,7 +173,7 @@ export default function GanttChart({
           {!isOverallView && onSortByPlannedStart && (
             <button
               onClick={onSortByPlannedStart}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer print:hidden"
               title="Sort activities chronologically by planned start date"
             >
               <ArrowDownAZ className="w-3.5 h-3.5 text-slate-400" />
@@ -182,7 +182,7 @@ export default function GanttChart({
           )}
 
           {/* Toggle buttons */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/60">
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 print:hidden">
             <button
               onClick={() => setZoom('month')}
               className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
@@ -218,7 +218,7 @@ export default function GanttChart({
           {/* Header Row */}
           <div className="flex border-b border-slate-200 bg-slate-50/70 text-xs font-semibold text-slate-500 h-12 items-stretch z-10 sticky top-0">
             {/* Sticky Sidebar Header Column */}
-            <div className="w-[280px] min-w-[280px] bg-slate-50 border-r border-slate-200 sticky left-0 flex items-center px-6 z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.12)]">
+            <div className="w-[280px] min-w-[280px] bg-slate-50 border-r border-slate-200 sticky left-0 flex items-center px-6 z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.12)] print:relative print:shadow-none print:border-r print:border-slate-200">
               Activity Description
             </div>
             {/* Timeline columns */}
@@ -298,14 +298,14 @@ export default function GanttChart({
                 <div
                   key={act.id}
                   onClick={() => onSelectActivity(act)}
-                  className={`flex group items-stretch min-h-[76px] transition-colors duration-150 cursor-pointer ${
+                  className={`flex group items-stretch min-h-[76px] transition-colors duration-150 cursor-pointer print:break-inside-avoid print:bg-white ${
                     isSelected 
                       ? 'bg-brand-50/80 hover:bg-brand-100/60' 
                       : 'hover:bg-slate-50/50'
                   }`}
                 >
                   <div
-                    className={`w-[280px] min-w-[280px] border-r border-slate-200/80 sticky left-0 py-3 flex flex-col justify-center gap-1.5 z-10 transition-colors shadow-[4px_0_10px_-4px_rgba(0,0,0,0.12)] ${
+                    className={`w-[280px] min-w-[280px] border-r border-slate-200/80 sticky left-0 py-3 flex flex-col justify-center gap-1.5 z-10 transition-colors shadow-[4px_0_10px_-4px_rgba(0,0,0,0.12)] print:relative print:shadow-none print:border-r print:border-slate-200/50 ${
                       isSelected 
                         ? 'bg-brand-50 border-r-2 border-r-brand-500' 
                         : 'bg-white group-hover:bg-slate-50/80'
