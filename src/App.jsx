@@ -138,31 +138,65 @@ export default function App() {
     }
   };
 
-  // Handle manual custom reordering of activities (up/down)
+  const getBlockRange = (list, startIdx) => {
+    const startDepth = list[startIdx].depth || 0;
+    let endIdx = startIdx + 1;
+    while (endIdx < list.length && (list[endIdx].depth || 0) > startDepth) {
+      endIdx++;
+    }
+    return { start: startIdx, end: endIdx };
+  };
+
+  // Handle manual custom reordering of activities (up/down) in WBS WtE Hierarchy
   const handleMoveActivity = async (direction, index) => {
     if (selectedProjectId === 'overall') return;
 
-    const updated = [...activities];
-    if (direction === 'up' && index > 0) {
-      const temp = updated[index];
-      updated[index] = updated[index - 1];
-      updated[index - 1] = temp;
-    } else if (direction === 'down' && index < updated.length - 1) {
-      const temp = updated[index];
-      updated[index] = updated[index + 1];
-      updated[index + 1] = temp;
-    } else {
-      return;
+    // Get the current flattened list of activities for this project
+    const flatList = getFlattenedActivities(activities);
+    if (index < 0 || index >= flatList.length) return;
+
+    const targetItem = flatList[index];
+    
+    // Find siblings (items with the same parent_id)
+    const siblings = flatList.filter(a => a.parent_id === targetItem.parent_id);
+    const sibIdx = siblings.findIndex(s => s.id === targetItem.id);
+
+    let siblingItem = null;
+    if (direction === 'up' && sibIdx > 0) {
+      siblingItem = siblings[sibIdx - 1];
+    } else if (direction === 'down' && sibIdx < siblings.length - 1) {
+      siblingItem = siblings[sibIdx + 1];
     }
 
-    // Optimistic UI update: change local state first for instant responsiveness
-    setActivities(updated);
+    if (!siblingItem) return;
+
+    // Find indices of target and sibling in the flatList
+    const targetFlatIdx = flatList.findIndex(a => a.id === targetItem.id);
+    const siblingFlatIdx = flatList.findIndex(a => a.id === siblingItem.id);
+
+    // Get block ranges (the item plus all its children)
+    const targetBlock = getBlockRange(flatList, targetFlatIdx);
+    const siblingBlock = getBlockRange(flatList, siblingFlatIdx);
+
+    // Determine which block is first in the array
+    const firstBlock = targetFlatIdx < siblingFlatIdx ? targetBlock : siblingBlock;
+    const secondBlock = targetFlatIdx < siblingFlatIdx ? siblingBlock : targetBlock;
+
+    const before = flatList.slice(0, firstBlock.start);
+    const part1 = flatList.slice(firstBlock.start, firstBlock.end);
+    const part2 = flatList.slice(secondBlock.start, secondBlock.end);
+    const after = flatList.slice(secondBlock.end);
+
+    // Swap the two WBS blocks (elements and their children move together)
+    const reorderedFlat = [...before, ...part2, ...part1, ...after];
+
+    // Optimistic UI update
+    setActivities(reorderedFlat);
 
     try {
-      await dbService.updateActivitiesOrder(updated);
+      await dbService.updateActivitiesOrder(reorderedFlat);
     } catch (err) {
       console.error('Error saving activity order:', err);
-      // Revert if saving failed
       fetchActivities();
     }
   };
