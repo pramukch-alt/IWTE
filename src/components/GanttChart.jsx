@@ -14,50 +14,62 @@ export default function GanttChart({
   onSortByPlannedStart,
   isOverallView,
   collapsedGroups,
-  onToggleGroupCollapse
+  onToggleGroupCollapse,
+  customStart = null,
+  customEnd = null
 }) {
   const timelineRef = useRef(null);
   const hasActivities = activities && activities.length > 0;
 
   // 1. Calculate timeline range safely
-  const dates = hasActivities ? activities.flatMap(act => {
-    const list = [];
-    if (act.plan_start) list.push(new Date(act.plan_start));
-    if (act.plan_end) list.push(new Date(act.plan_end));
-    if (act.actual_start) list.push(new Date(act.actual_start));
-    if (act.actual_end) list.push(new Date(act.actual_end));
-    return list.filter(d => !isNaN(d.getTime()));
-  }) : [];
+  let timelineStart, timelineEnd;
 
-  const minDateVal = dates.length > 0 ? new Date(Math.min(...dates)) : CURRENT_DATE;
-  const maxDateVal = dates.length > 0 ? new Date(Math.max(...dates)) : CURRENT_DATE;
-
-  // Round timeline boundaries to start of the first month and end of the last month
-  const timelineStart = new Date(minDateVal.getFullYear(), minDateVal.getMonth(), 1);
-  const timelineEnd = new Date(maxDateVal.getFullYear(), maxDateVal.getMonth() + 1, 0);
-
-  // Buffer: Ensure timeline has at least 3 months, and extends to cover CURRENT_DATE
-  if (timelineStart > CURRENT_DATE) {
-    timelineStart.setFullYear(CURRENT_DATE.getFullYear());
-    timelineStart.setMonth(CURRENT_DATE.getMonth() - 1);
+  if (customStart && customEnd) {
+    const customStartD = new Date(customStart);
+    const customEndD = new Date(customEnd);
+    timelineStart = new Date(customStartD.getFullYear(), customStartD.getMonth(), 1);
+    timelineEnd = new Date(customEndD.getFullYear(), customEndD.getMonth() + 1, 0);
   } else {
-    // Ensure at least 1 month buffer before CURRENT_DATE
-    const minStartLimit = new Date(CURRENT_DATE.getFullYear(), CURRENT_DATE.getMonth() - 1, 1);
-    if (timelineStart > minStartLimit) {
-      timelineStart.setMonth(minStartLimit.getMonth());
-      timelineStart.setFullYear(minStartLimit.getFullYear());
+    const dates = hasActivities ? activities.flatMap(act => {
+      const list = [];
+      if (act.plan_start) list.push(new Date(act.plan_start));
+      if (act.plan_end) list.push(new Date(act.plan_end));
+      if (act.actual_start) list.push(new Date(act.actual_start));
+      if (act.actual_end) list.push(new Date(act.actual_end));
+      return list;
+    }) : [];
+
+    const validDates = dates.filter(d => !isNaN(d.getTime()));
+    const minDateVal = validDates.length > 0 ? new Date(Math.min(...validDates)) : new Date();
+    const maxDateVal = validDates.length > 0 ? new Date(Math.max(...validDates)) : new Date();
+
+    // Round timeline boundaries to start of the first month and end of the last month
+    timelineStart = new Date(minDateVal.getFullYear(), minDateVal.getMonth(), 1);
+    timelineEnd = new Date(maxDateVal.getFullYear(), maxDateVal.getMonth() + 1, 0);
+
+    // Buffer: Ensure timeline has at least 3 months, and extends to cover CURRENT_DATE
+    if (timelineStart > CURRENT_DATE) {
+      timelineStart.setFullYear(CURRENT_DATE.getFullYear());
+      timelineStart.setMonth(CURRENT_DATE.getMonth() - 1);
+    } else {
+      // Ensure at least 1 month buffer before CURRENT_DATE
+      const minStartLimit = new Date(CURRENT_DATE.getFullYear(), CURRENT_DATE.getMonth() - 1, 1);
+      if (timelineStart > minStartLimit) {
+        timelineStart.setMonth(minStartLimit.getMonth());
+        timelineStart.setFullYear(minStartLimit.getFullYear());
+      }
     }
-  }
 
-  if (timelineEnd < CURRENT_DATE) {
-    timelineEnd.setFullYear(CURRENT_DATE.getFullYear());
-    timelineEnd.setMonth(CURRENT_DATE.getMonth() + 2);
-  } else {
-    // Ensure at least 2 months buffer after CURRENT_DATE
-    const minEndLimit = new Date(CURRENT_DATE.getFullYear(), CURRENT_DATE.getMonth() + 2, 0);
-    if (timelineEnd < minEndLimit) {
-      timelineEnd.setMonth(minEndLimit.getMonth());
-      timelineEnd.setFullYear(minEndLimit.getFullYear());
+    if (timelineEnd < CURRENT_DATE) {
+      timelineEnd.setFullYear(CURRENT_DATE.getFullYear());
+      timelineEnd.setMonth(CURRENT_DATE.getMonth() + 2);
+    } else {
+      // Ensure at least 2 months buffer after CURRENT_DATE
+      const minEndLimit = new Date(CURRENT_DATE.getFullYear(), CURRENT_DATE.getMonth() + 2, 0);
+      if (timelineEnd < minEndLimit) {
+        timelineEnd.setMonth(minEndLimit.getMonth());
+        timelineEnd.setFullYear(minEndLimit.getFullYear());
+      }
     }
   }
 

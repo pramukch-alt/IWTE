@@ -4,6 +4,7 @@ import GanttChart from './components/GanttChart';
 import ActivityTable from './components/ActivityTable';
 import ActivityForm from './components/ActivityForm';
 import DuplicateModal from './components/DuplicateModal';
+import PrintSetupModal from './components/PrintSetupModal';
 import {
   LayoutDashboard,
   Calendar,
@@ -44,6 +45,13 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState([1, 2, 3, 4, 5, 6, 7]);
   const [collapsedGroups, setCollapsedGroups] = useState([]);
+
+  // Print configuration states
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printStart, setPrintStart] = useState(null);
+  const [printEnd, setPrintEnd] = useState(null);
+  const [printVisibleIds, setPrintVisibleIds] = useState([]);
+  const [isPrintingActive, setIsPrintingActive] = useState(false);
 
   // Fetch projects on mount
   useEffect(() => {
@@ -137,6 +145,29 @@ export default function App() {
       alert('Failed to duplicate activity.');
     }
   };
+
+  // Handle print settings confirmation
+  const handleConfirmPrint = ({ customStart, customEnd, selectedIds }) => {
+    setPrintStart(customStart);
+    setPrintEnd(customEnd);
+    setPrintVisibleIds(selectedIds);
+    setIsPrintingActive(true);
+    setIsPrintModalOpen(false);
+
+    // Give state updates time to render, then open the print dialog
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+
+  // Clean up printing state after print window closes
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      setIsPrintingActive(false);
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, []);
 
   const getBlockRange = (list, startIdx) => {
     const startDepth = list[startIdx].depth || 0;
@@ -400,8 +431,13 @@ export default function App() {
     ? getFlattenedActivities(activities).filter(act => selectedOverallActivities.includes(act.id))
     : getFlattenedActivities(activities.filter(act => Number(act.project_id) === Number(selectedProjectId)));
 
+  // Filter by selected print IDs if print is active
+  const printFilteredActivities = isPrintingActive
+    ? displayActivities.filter(act => printVisibleIds.includes(act.id))
+    : displayActivities;
+
   // Filter activities by search term
-  const filteredActivities = displayActivities.filter(act =>
+  const filteredActivities = printFilteredActivities.filter(act =>
     act.activity_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -586,7 +622,7 @@ export default function App() {
 
           {/* Print Button */}
           <button
-            onClick={() => window.print()}
+            onClick={() => setIsPrintModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/80 rounded-xl shadow-xs transition-all cursor-pointer"
             title="Print Gantt Chart (A3 Landscape)"
           >
@@ -929,6 +965,8 @@ export default function App() {
                 isOverallView={selectedProjectId === 'overall'}
                 collapsedGroups={collapsedGroups}
                 onToggleGroupCollapse={toggleGroupCollapse}
+                customStart={isPrintingActive ? printStart : null}
+                customEnd={isPrintingActive ? printEnd : null}
               />
             </div>
           </div>
@@ -967,6 +1005,14 @@ export default function App() {
         projects={projects}
         onClose={() => setIsDuplicateOpen(false)}
         onDuplicate={handleDuplicateActivity}
+      />
+
+      {/* 8. PRINT CONFIGURATION MODAL */}
+      <PrintSetupModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        activities={displayActivities}
+        onConfirmPrint={handleConfirmPrint}
       />
 
     </div>
