@@ -53,6 +53,9 @@ export default function App() {
   const [printVisibleIds, setPrintVisibleIds] = useState([]);
   const [isPrintingActive, setIsPrintingActive] = useState(false);
 
+  // Overall display comparison mode: 'project' or 'compare'
+  const [overallMode, setOverallMode] = useState('project');
+
   // Fetch projects on mount
   useEffect(() => {
     const fetchProjects = async () => {
@@ -341,6 +344,48 @@ export default function App() {
     return result;
   };
 
+  // Groups and stacks same-named activities from all projects next to each other
+  const getComparisonFlattenedActivities = (activitiesList) => {
+    const rolledUpList = rollupDates(activitiesList);
+
+    const projectIds = [...new Set(activitiesList.map(a => Number(a.project_id)))];
+    const masterProjectId = projectIds.length > 0 ? Math.min(...projectIds) : 1;
+
+    // Establishing the master sequence of activity names from TPP (master project)
+    const masterProjNodes = rolledUpList.filter(n => Number(n.project_id) === masterProjectId);
+    const masterFlattened = getFlattenedActivities(masterProjNodes);
+
+    const result = [];
+    const processedIds = new Set();
+
+    for (const masterAct of masterFlattened) {
+      const nameKey = masterAct.activity_name.trim().toLowerCase();
+      const matches = rolledUpList.filter(act => 
+        act.activity_name.trim().toLowerCase() === nameKey &&
+        !processedIds.has(act.id)
+      );
+
+      // Sort matching rows consistently by project ID
+      matches.sort((a, b) => Number(a.project_id) - Number(b.project_id));
+
+      for (const match of matches) {
+        processedIds.add(match.id);
+        result.push({
+          ...match,
+          depth: masterAct.depth // copy visual WBS depth for aligned indentation
+        });
+      }
+    }
+
+    // Append any extra activities that exist in other projects but not in TPP
+    const remaining = rolledUpList.filter(act => !processedIds.has(act.id));
+    if (remaining.length > 0) {
+      result.push(...getFlattenedActivities(remaining));
+    }
+
+    return result;
+  };
+
   // Handle deleting an activity
   const handleDeleteActivity = async (id) => {
     try {
@@ -428,7 +473,10 @@ export default function App() {
 
   // Filter activities dynamically: in overall view, only show checked activities from the selector panel
   const displayActivities = selectedProjectId === 'overall'
-    ? getFlattenedActivities(activities).filter(act => selectedOverallActivities.includes(act.id))
+    ? (overallMode === 'compare' 
+        ? getComparisonFlattenedActivities(activities) 
+        : getFlattenedActivities(activities)
+      ).filter(act => selectedOverallActivities.includes(act.id))
     : getFlattenedActivities(activities.filter(act => Number(act.project_id) === Number(selectedProjectId)));
 
   // Filter by selected print IDs if print is active
@@ -859,6 +907,37 @@ export default function App() {
                       className="text-[9px] font-bold text-slate-500 hover:text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded transition-all border border-slate-200"
                     >
                       None
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grouping / Comparison Mode Selector */}
+                <div className="flex flex-col gap-1.5 flex-shrink-0 border-b border-slate-100 pb-3.5 mt-1 print:hidden">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    Display Mode / จัดเรียงกิจกรรม
+                  </label>
+                  <div className="grid grid-cols-2 gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-205/40">
+                    <button
+                      type="button"
+                      onClick={() => setOverallMode('project')}
+                      className={`px-2 py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                        overallMode === 'project'
+                          ? 'bg-white text-slate-800 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      By Project
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOverallMode('compare')}
+                      className={`px-2 py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                        overallMode === 'compare'
+                          ? 'bg-white text-slate-800 shadow-xs'
+                          : 'text-slate-550 hover:text-slate-800'
+                      }`}
+                    >
+                      Compare Activities
                     </button>
                   </div>
                 </div>
