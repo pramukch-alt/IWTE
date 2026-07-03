@@ -912,11 +912,11 @@ export default function App() {
           </div>
 
           {/* 4. GANTT CHART DASHBOARD VIEW (With Integrated Selector in Overall View) */}
-          <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+          <div className="flex flex-col lg:flex-row print:flex-row gap-6 items-stretch">
             
             {/* Master Activity Checklist Panel (Only rendered in Overall IWTE Integration View) */}
             {selectedProjectId === 'overall' && (
-              <div className="w-full lg:w-[290px] flex-shrink-0 bg-white border border-slate-200 rounded-2xl shadow-xs p-5 flex flex-col gap-4 max-h-[580px] overflow-hidden">
+              <div className="w-full lg:w-[290px] overall-selector flex-shrink-0 bg-white border border-slate-200 rounded-2xl shadow-xs p-5 flex flex-col gap-4 max-h-[580px] overflow-hidden">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
                   <div>
                     <h3 className="text-xs font-bold text-slate-800">Integrated Selector</h3>
