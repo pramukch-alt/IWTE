@@ -8,10 +8,11 @@ const generateMonths = () => {
   const endYear = 2028;
   for (let y = startYear; y <= endYear; y++) {
     for (let m = 0; m < 12; m++) {
-      const d = new Date(y, m, 1);
+      const monthStr = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+      const label = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       months.push({
-        value: d.toISOString().split('T')[0],
-        label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        value: monthStr,
+        label: label
       });
     }
   }

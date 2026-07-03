@@ -25,10 +25,15 @@ export default function GanttChart({
   let timelineStart, timelineEnd;
 
   if (customStart && customEnd) {
-    const customStartD = new Date(customStart);
-    const customEndD = new Date(customEnd);
-    timelineStart = new Date(customStartD.getFullYear(), customStartD.getMonth(), 1);
-    timelineEnd = new Date(customEndD.getFullYear(), customEndD.getMonth() + 1, 0);
+    const startParts = customStart.split('-');
+    const startYear = parseInt(startParts[0], 10);
+    const startMonth = parseInt(startParts[1], 10) - 1;
+    timelineStart = new Date(startYear, startMonth, 1);
+
+    const endParts = customEnd.split('-');
+    const endYear = parseInt(endParts[0], 10);
+    const endMonth = parseInt(endParts[1], 10) - 1;
+    timelineEnd = new Date(endYear, endMonth + 1, 0);
   } else {
     const dates = hasActivities ? activities.flatMap(act => {
       const list = [];
