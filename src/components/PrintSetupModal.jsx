@@ -25,6 +25,7 @@ export default function PrintSetupModal({ isOpen, onClose, activities, onConfirm
   const [startMonth, setStartMonth] = useState('2026-01-01');
   const [endMonth, setEndMonth] = useState('2027-12-01');
   const [visibleIds, setVisibleIds] = useState([]);
+  const [paperSize, setPaperSize] = useState('A3');
 
   // Initialize visibleIds with all activity IDs when open
   useEffect(() => {
@@ -54,7 +55,8 @@ export default function PrintSetupModal({ isOpen, onClose, activities, onConfirm
     onConfirmPrint({
       customStart: rangeType === 'custom' ? startMonth : null,
       customEnd: rangeType === 'custom' ? endMonth : null,
-      selectedIds: visibleIds
+      selectedIds: visibleIds,
+      paperSize: paperSize
     });
   };
 
@@ -142,7 +144,28 @@ export default function PrintSetupModal({ isOpen, onClose, activities, onConfirm
             )}
           </div>
 
-          {/* 2. Activities Checklist Section */}
+          {/* 2. Paper Size Selection Section */}
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <Printer className="w-4 h-4 text-slate-400" />
+              <span>Paper Size / Print Layout</span>
+            </div>
+            <div className="bg-slate-50 p-3.5 border border-slate-200 rounded-xl">
+              <select
+                value={paperSize}
+                onChange={(e) => setPaperSize(e.target.value)}
+                className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 w-full cursor-pointer transition-all"
+              >
+                <option value="A3">A3 Landscape (Recommended)</option>
+                <option value="A4">A4 Landscape</option>
+                <option value="A2">A2 Landscape</option>
+                <option value="A1">A1 Landscape</option>
+                <option value="A0">A0 Landscape</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 3. Activities Checklist Section */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
               <div className="flex items-center gap-1.5">

@@ -150,12 +150,29 @@ export default function App() {
   };
 
   // Handle print settings confirmation
-  const handleConfirmPrint = ({ customStart, customEnd, selectedIds }) => {
+  const handleConfirmPrint = ({ customStart, customEnd, selectedIds, paperSize }) => {
     setPrintStart(customStart);
     setPrintEnd(customEnd);
     setPrintVisibleIds(selectedIds);
     setIsPrintingActive(true);
     setIsPrintModalOpen(false);
+
+    // Apply paper size dynamically via style sheet injection
+    const styleId = 'print-page-style';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = `
+      @media print {
+        @page {
+          size: ${paperSize || 'A3'} landscape !important;
+          margin: 15mm 10mm 15mm 10mm !important;
+        }
+      }
+    `;
 
     // Give state updates time to render, then open the print dialog
     setTimeout(() => {
@@ -167,9 +184,19 @@ export default function App() {
   useEffect(() => {
     const handleAfterPrint = () => {
       setIsPrintingActive(false);
+      const styleEl = document.getElementById('print-page-style');
+      if (styleEl) {
+        styleEl.remove();
+      }
     };
     window.addEventListener('afterprint', handleAfterPrint);
-    return () => window.removeEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('afterprint', handleAfterPrint);
+      const styleEl = document.getElementById('print-page-style');
+      if (styleEl) {
+        styleEl.remove();
+      }
+    };
   }, []);
 
   const getBlockRange = (list, startIdx) => {
@@ -672,7 +699,7 @@ export default function App() {
           <button
             onClick={() => setIsPrintModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/80 rounded-xl shadow-xs transition-all cursor-pointer"
-            title="Print Gantt Chart (A3 Landscape)"
+            title="Configure & Print Gantt Chart"
           >
             <Printer className="w-3.5 h-3.5 text-slate-400" />
             Print
