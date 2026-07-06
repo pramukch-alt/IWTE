@@ -40,6 +40,14 @@ export default function GanttChart({
     return isNaN(d.getTime()) ? null : d;
   };
 
+  // Helper: Format date for display on Gantt timeline
+  const formatPlanDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = parseLocalDate(dateStr);
+    if (!d) return '';
+    return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+  };
+
   // 1. Calculate timeline range safely
   let timelineStart, timelineEnd;
 
@@ -347,7 +355,7 @@ export default function GanttChart({
                 <div
                   key={act.id}
                   onClick={() => onSelectActivity(act)}
-                  className={`flex group items-stretch min-h-[50px] transition-colors duration-150 cursor-pointer print:break-inside-avoid print:bg-white ${
+                  className={`flex group items-stretch min-h-[58px] transition-colors duration-150 cursor-pointer print:break-inside-avoid print:bg-white ${
                     isSelected 
                       ? 'bg-brand-50/80 hover:bg-brand-100/60' 
                       : 'hover:bg-slate-50/50'
@@ -464,8 +472,20 @@ export default function GanttChart({
                     </div>
 
                     {/* Dual bar wrapper */}
-                    <div className="w-full relative h-8">
+                    <div className="w-full relative h-11">
                       
+                      {/* Plan date text above the plan bar */}
+                      {act.plan_start && act.plan_end && (
+                        <div
+                          style={{
+                            left: `${planStartPercent}%`,
+                          }}
+                          className="absolute top-0 text-[9px] font-bold text-slate-450 whitespace-nowrap print:text-slate-500"
+                        >
+                          Plan: {formatPlanDate(act.plan_start)} - {formatPlanDate(act.plan_end)}
+                        </div>
+                      )}
+
                       {act.is_group ? (
                         <>
                           {/* SUMMARY BAR: Planned (Top Bar - Dark slate-gray bracket) */}
@@ -475,7 +495,7 @@ export default function GanttChart({
                                 left: `${planStartPercent}%`,
                                 width: `${planWidthPercent}%`
                               }}
-                              className="absolute top-0.5 h-2 bg-slate-800 rounded-sm z-2"
+                              className="absolute top-[14px] h-2 bg-slate-800 rounded-sm z-2"
                               title={`[Phase Plan] ${act.activity_name}\nStart: ${act.plan_start}\nEnd: ${act.plan_end}`}
                             >
                               {/* Left downward triangle/bracket */}
@@ -514,7 +534,7 @@ export default function GanttChart({
                                 borderColor: act.color || '#cbd5e1'
                               }}
                               title={`[Plan] ${act.activity_name}\nStart: ${act.plan_start}\nEnd: ${act.plan_end}`}
-                              className={`absolute top-0 h-3 rounded-md border group-hover:opacity-90 transition-all z-2 shadow-2xs`}
+                              className={`absolute top-[14px] h-3 rounded-md border group-hover:opacity-90 transition-all z-2 shadow-2xs`}
                             >
                               <div className="w-full h-full flex items-center px-2 overflow-hidden">
                                 <span className={`text-[8px] font-bold truncate select-none opacity-0 group-hover:opacity-100 transition-opacity ${
@@ -538,7 +558,7 @@ export default function GanttChart({
                                 })
                               }}
                               title={`[Actual] ${act.activity_name}\nStart: ${act.actual_start}\nEnd: ${act.actual_end || 'In Progress'}\nStatus: ${isInProgress ? 'In Progress' : 'Completed'}`}
-                              className={`absolute bottom-0 h-3 rounded-md transition-all z-2 shadow-2xs border flex items-center justify-between px-1.5 overflow-hidden ${
+                              className={`absolute bottom-0.5 h-3 rounded-md transition-all z-2 shadow-2xs border flex items-center justify-between px-1.5 overflow-hidden ${
                                 isDelayed
                                   ? 'bg-rose-500/90 text-white border-rose-600/30 hover:bg-rose-500'
                                   : 'text-white hover:opacity-95'
