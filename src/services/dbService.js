@@ -135,26 +135,55 @@ export const dbService = {
         ? Math.max(...currentActs.map(a => a.sort_order || 0))
         : 0
 
-      const { data, error } = await supabase
-        .from('activities')
-        .insert([
-          {
-            project_id: pid,
-            activity_name: activityName,
-            plan_start: planStart || null,
-            plan_end: planEnd || null,
-            actual_start: null,
-            actual_end: null,
-            is_group: isGroup,
-            parent_id: parentId ? Number(parentId) : null,
-            sort_order: maxSort + 1,
-            color: color,
-            is_critical: isCritical
-          }
-        ])
-        .select()
-      if (error) throw error
-      return data[0]
+      try {
+        const { data, error } = await supabase
+          .from('activities')
+          .insert([
+            {
+              project_id: pid,
+              activity_name: activityName,
+              plan_start: planStart || null,
+              plan_end: planEnd || null,
+              actual_start: null,
+              actual_end: null,
+              is_group: isGroup,
+              parent_id: parentId ? Number(parentId) : null,
+              sort_order: maxSort + 1,
+              color: color,
+              is_critical: isCritical
+            }
+          ])
+          .select()
+        if (error) throw error
+        return data[0]
+      } catch (err) {
+        if (err.code === '42703' || (err.message && err.message.includes('is_critical'))) {
+          console.warn("is_critical column missing in Supabase. Retrying insert without is_critical property.", err);
+          const { data, error } = await supabase
+            .from('activities')
+            .insert([
+              {
+                project_id: pid,
+                activity_name: activityName,
+                plan_start: planStart || null,
+                plan_end: planEnd || null,
+                actual_start: null,
+                actual_end: null,
+                is_group: isGroup,
+                parent_id: parentId ? Number(parentId) : null,
+                sort_order: maxSort + 1,
+                color: color
+              }
+            ])
+            .select()
+          if (error) throw error
+          return {
+            ...data[0],
+            is_critical: false
+          };
+        }
+        throw err;
+      }
     } else {
       try {
         const activities = JSON.parse(safeStorage.getItem(ACTIVITIES_KEY) || '[]')
@@ -198,23 +227,49 @@ export const dbService = {
     const normActualEnd = actualEnd && actualEnd !== '' ? actualEnd : null
 
     if (supabase) {
-      const { data, error } = await supabase
-        .from('activities')
-        .update({
-          activity_name: name,
-          plan_start: planStart || null,
-          plan_end: planEnd || null,
-          actual_start: normActualStart,
-          actual_end: normActualEnd,
-          is_group: isGroup,
-          parent_id: parentId ? Number(parentId) : null,
-          color: color,
-          is_critical: isCritical
-        })
-        .eq('id', aid)
-        .select()
-      if (error) throw error
-      return data[0]
+      try {
+        const { data, error } = await supabase
+          .from('activities')
+          .update({
+            activity_name: name,
+            plan_start: planStart || null,
+            plan_end: planEnd || null,
+            actual_start: normActualStart,
+            actual_end: normActualEnd,
+            is_group: isGroup,
+            parent_id: parentId ? Number(parentId) : null,
+            color: color,
+            is_critical: isCritical
+          })
+          .eq('id', aid)
+          .select()
+        if (error) throw error
+        return data[0]
+      } catch (err) {
+        if (err.code === '42703' || (err.message && err.message.includes('is_critical'))) {
+          console.warn("is_critical column missing in Supabase. Retrying update without is_critical property.", err);
+          const { data, error } = await supabase
+            .from('activities')
+            .update({
+              activity_name: name,
+              plan_start: planStart || null,
+              plan_end: planEnd || null,
+              actual_start: normActualStart,
+              actual_end: normActualEnd,
+              is_group: isGroup,
+              parent_id: parentId ? Number(parentId) : null,
+              color: color
+            })
+            .eq('id', aid)
+            .select()
+          if (error) throw error
+          return {
+            ...data[0],
+            is_critical: false
+          };
+        }
+        throw err;
+      }
     } else {
       try {
         const activities = JSON.parse(safeStorage.getItem(ACTIVITIES_KEY) || '[]')
@@ -258,24 +313,52 @@ export const dbService = {
       if (fetchError) throw fetchError
 
       // Prepare duplicates
-      const newRows = targetPids.map(pid => ({
-        project_id: pid,
-        activity_name: source.activity_name,
-        plan_start: source.plan_start,
-        plan_end: source.plan_end,
-        actual_start: null,
-        actual_end: null,
-        is_group: source.is_group || false,
-        parent_id: null,
-        color: source.color || '#0D9488',
-        is_critical: source.is_critical || false
-      }))
+      const newRows = targetPids.map(pid => {
+        const row = {
+          project_id: pid,
+          activity_name: source.activity_name,
+          plan_start: source.plan_start,
+          plan_end: source.plan_end,
+          actual_start: null,
+          actual_end: null,
+          is_group: source.is_group || false,
+          parent_id: null,
+          color: source.color || '#0D9488'
+        };
+        if ('is_critical' in source) {
+          row.is_critical = source.is_critical || false;
+        }
+        return row;
+      });
 
-      const { error: insertError } = await supabase
-        .from('activities')
-        .insert(newRows)
-      if (insertError) throw insertError
-      return true
+      try {
+        const { error: insertError } = await supabase
+          .from('activities')
+          .insert(newRows)
+        if (insertError) throw insertError
+        return true
+      } catch (err) {
+        if (err.code === '42703' || (err.message && err.message.includes('is_critical'))) {
+          console.warn("is_critical column missing in Supabase. Retrying duplicate without is_critical property.", err);
+          const cleanRows = targetPids.map(pid => ({
+            project_id: pid,
+            activity_name: source.activity_name,
+            plan_start: source.plan_start,
+            plan_end: source.plan_end,
+            actual_start: null,
+            actual_end: null,
+            is_group: source.is_group || false,
+            parent_id: null,
+            color: source.color || '#0D9488'
+          }));
+          const { error: insertError } = await supabase
+            .from('activities')
+            .insert(cleanRows)
+          if (insertError) throw insertError
+          return true;
+        }
+        throw err;
+      }
     } else {
       try {
         const activities = JSON.parse(safeStorage.getItem(ACTIVITIES_KEY) || '[]')
