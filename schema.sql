@@ -25,6 +25,7 @@ CREATE TABLE activities (
     parent_id INTEGER REFERENCES activities(id) ON DELETE CASCADE,
     sort_order INTEGER DEFAULT 0,
     color VARCHAR(7) DEFAULT '#0D9488',
+    is_critical BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_plan_dates CHECK (plan_start IS NULL OR plan_end IS NULL OR plan_end >= plan_start),
     CONSTRAINT chk_actual_dates CHECK (actual_end IS NULL OR actual_start IS NULL OR actual_end >= actual_start)

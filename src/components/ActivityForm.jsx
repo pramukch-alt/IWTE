@@ -15,6 +15,7 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
   const [isGroup, setIsGroup] = useState(false);
   const [parentId, setParentId] = useState('');
   const [color, setColor] = useState('#0D9488');
+  const [isCritical, setIsCritical] = useState(false);
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
@@ -55,7 +56,8 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
       isGroup ? null : planEnd, 
       isGroup, 
       parentId ? Number(parentId) : null,
-      color
+      color,
+      isCritical
     );
     
     // Reset form
@@ -65,6 +67,7 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
     setIsGroup(false);
     setParentId('');
     setColor('#0D9488');
+    setIsCritical(false);
     onClose();
   };
 
@@ -75,6 +78,7 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
     setIsGroup(false);
     setParentId('');
     setColor('#0D9488');
+    setIsCritical(false);
     onClose();
   };
 
@@ -191,7 +195,36 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
             </div>
           )}
 
-          {/* Color Picker */}
+        {/* Critical Path Lock Options */}
+        <div className="flex flex-col gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Critical Path (Lock Dates)
+          </label>
+          <div className="flex items-center gap-6 mt-1 bg-white p-2.5 border border-slate-200 rounded-xl">
+            <label className="flex items-center gap-2 text-sm text-slate-705 font-semibold cursor-pointer select-none">
+              <input
+                type="radio"
+                name="add-is-critical"
+                checked={isCritical}
+                onChange={() => setIsCritical(true)}
+                className="text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+              />
+              <span>Yes (Lock Dates)</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-705 font-semibold cursor-pointer select-none">
+              <input
+                type="radio"
+                name="add-is-critical"
+                checked={!isCritical}
+                onChange={() => setIsCritical(false)}
+                className="text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+              />
+              <span>No</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Color Picker */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Activity Color

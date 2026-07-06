@@ -122,7 +122,7 @@ export const dbService = {
   },
 
   // 3. Insert a new activity
-  async addActivity(projectId, activityName, planStart, planEnd, isGroup = false, parentId = null, color = '#0D9488') {
+  async addActivity(projectId, activityName, planStart, planEnd, isGroup = false, parentId = null, color = '#0D9488', isCritical = false) {
     const pid = Number(projectId)
     if (supabase) {
       // Find current maximum sort_order for this project
@@ -148,7 +148,8 @@ export const dbService = {
             is_group: isGroup,
             parent_id: parentId ? Number(parentId) : null,
             sort_order: maxSort + 1,
-            color: color
+            color: color,
+            is_critical: isCritical
           }
         ])
         .select()
@@ -176,6 +177,7 @@ export const dbService = {
           parent_id: parentId ? Number(parentId) : null,
           sort_order: maxSort + 1,
           color: color,
+          is_critical: isCritical,
           created_at: new Date().toISOString()
         }
         activities.push(newActivity)
@@ -189,7 +191,7 @@ export const dbService = {
   },
 
   // 4. Update an activity's details (both plan and actual dates/names)
-  async updateActivity(activityId, name, planStart, planEnd, actualStart, actualEnd, isGroup = false, parentId = null, color = '#0D9488') {
+  async updateActivity(activityId, name, planStart, planEnd, actualStart, actualEnd, isGroup = false, parentId = null, color = '#0D9488', isCritical = false) {
     const aid = Number(activityId)
     // Normalize empty strings or empty values to null
     const normActualStart = actualStart && actualStart !== '' ? actualStart : null
@@ -206,7 +208,8 @@ export const dbService = {
           actual_end: normActualEnd,
           is_group: isGroup,
           parent_id: parentId ? Number(parentId) : null,
-          color: color
+          color: color,
+          is_critical: isCritical
         })
         .eq('id', aid)
         .select()
@@ -227,7 +230,8 @@ export const dbService = {
           actual_end: normActualEnd,
           is_group: isGroup,
           parent_id: parentId ? Number(parentId) : null,
-          color: color
+          color: color,
+          is_critical: isCritical
         }
         activities[index] = updatedActivity
         safeStorage.setItem(ACTIVITIES_KEY, JSON.stringify(activities))
@@ -263,7 +267,8 @@ export const dbService = {
         actual_end: null,
         is_group: source.is_group || false,
         parent_id: null,
-        color: source.color || '#0D9488'
+        color: source.color || '#0D9488',
+        is_critical: source.is_critical || false
       }))
 
       const { error: insertError } = await supabase
@@ -291,6 +296,7 @@ export const dbService = {
             is_group: source.is_group || false,
             parent_id: null,
             color: source.color || '#0D9488',
+            is_critical: source.is_critical || false,
             created_at: new Date().toISOString()
           })
         })
