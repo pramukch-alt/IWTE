@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Calendar, ZoomIn, ZoomOut, AlertTriangle, CheckCircle, Clock, ChevronUp, ChevronDown, ChevronRight, ArrowDownAZ } from 'lucide-react';
 
 // Hardcoded current date based on system metadata: 2026-06-26
-const CURRENT_DATE = new Date('2026-06-26');
+const CURRENT_DATE = new Date(2026, 5, 26);
 
 export default function GanttChart({
   activities,
@@ -22,6 +22,24 @@ export default function GanttChart({
   const timelineRef = useRef(null);
   const hasActivities = activities && activities.length > 0;
 
+  // Helper: Parse YYYY-MM-DD date string as local date (avoiding UTC offset shifts)
+  const parseLocalDate = (dateInput) => {
+    if (!dateInput) return null;
+    if (dateInput instanceof Date) {
+      return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+    }
+    const parts = dateInput.split('-');
+    if (parts.length === 3) {
+      return new Date(
+        parseInt(parts[0], 10),
+        parseInt(parts[1], 10) - 1,
+        parseInt(parts[2], 10)
+      );
+    }
+    const d = new Date(dateInput);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   // 1. Calculate timeline range safely
   let timelineStart, timelineEnd;
 
@@ -38,10 +56,10 @@ export default function GanttChart({
   } else {
     const dates = hasActivities ? activities.flatMap(act => {
       const list = [];
-      if (act.plan_start) list.push(new Date(act.plan_start));
-      if (act.plan_end) list.push(new Date(act.plan_end));
-      if (act.actual_start) list.push(new Date(act.actual_start));
-      if (act.actual_end) list.push(new Date(act.actual_end));
+      if (act.plan_start) { const d = parseLocalDate(act.plan_start); if (d) list.push(d); }
+      if (act.plan_end) { const d = parseLocalDate(act.plan_end); if (d) list.push(d); }
+      if (act.actual_start) { const d = parseLocalDate(act.actual_start); if (d) list.push(d); }
+      if (act.actual_end) { const d = parseLocalDate(act.actual_end); if (d) list.push(d); }
       return list;
     }) : [];
 
@@ -82,18 +100,20 @@ export default function GanttChart({
   const totalTimeMs = timelineEnd.getTime() - timelineStart.getTime();
 
   // Helper: Get position percentage for a given date
-  const getPositionPercent = (dateString) => {
-    if (!dateString) return 0;
-    const date = new Date(dateString);
+  const getPositionPercent = (dateInput) => {
+    if (!dateInput) return 0;
+    const date = parseLocalDate(dateInput);
+    if (!date) return 0;
     const offsetMs = date.getTime() - timelineStart.getTime();
     return Math.min(Math.max((offsetMs / totalTimeMs) * 100, 0), 100);
   };
 
   // Helper: Get width percentage for a date range
-  const getWidthPercent = (startDateStr, endDateStr) => {
-    if (!startDateStr || !endDateStr) return 0;
-    const start = new Date(startDateStr);
-    const end = new Date(endDateStr);
+  const getWidthPercent = (startDateInput, endDateInput) => {
+    if (!startDateInput || !endDateInput) return 0;
+    const start = parseLocalDate(startDateInput);
+    const end = parseLocalDate(endDateInput);
+    if (!start || !end) return 0;
     const durationMs = end.getTime() - start.getTime() + 86400000; // include end day
     return Math.min(Math.max((durationMs / totalTimeMs) * 100, 0.5), 100);
   };
@@ -301,19 +321,19 @@ export default function GanttChart({
                   // Completed
                   isCompleted = true;
                   actualWidthPercent = getWidthPercent(act.actual_start, act.actual_end);
-                  const planEnd = new Date(act.plan_end);
-                  const actualEnd = new Date(act.actual_end);
-                  delayDays = Math.round((actualEnd - planEnd) / (1000 * 60 * 60 * 24));
+                  const planEnd = parseLocalDate(act.plan_end);
+                  const actualEnd = parseLocalDate(act.actual_end);
+                  delayDays = (planEnd && actualEnd) ? Math.round((actualEnd - planEnd) / (1000 * 60 * 60 * 24)) : 0;
                   isDelayed = delayDays > 0;
                 } else {
                   // In Progress: Draw bar up to today's date (or plan_end, whichever is larger, but mark as in progress)
                   isInProgress = true;
-                  const planEnd = new Date(act.plan_end);
-                  const endDateToUse = CURRENT_DATE > planEnd ? CURRENT_DATE : planEnd;
-                  actualWidthPercent = getWidthPercent(act.actual_start, endDateToUse.toISOString().split('T')[0]);
+                  const planEnd = parseLocalDate(act.plan_end);
+                  const endDateToUse = (planEnd && CURRENT_DATE > planEnd) ? CURRENT_DATE : planEnd;
+                  actualWidthPercent = getWidthPercent(act.actual_start, endDateToUse);
                   
                   // Overdue calculation
-                  if (CURRENT_DATE > planEnd) {
+                  if (planEnd && CURRENT_DATE > planEnd) {
                     delayDays = Math.round((CURRENT_DATE - planEnd) / (1000 * 60 * 60 * 24));
                     isDelayed = delayDays > 0;
                   }
