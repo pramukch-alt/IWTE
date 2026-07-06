@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Calendar, ZoomIn, ZoomOut, AlertTriangle, CheckCircle, Clock, ChevronUp, ChevronDown, ChevronRight, ArrowDownAZ } from 'lucide-react';
 
 // Hardcoded current date based on system metadata: 2026-06-26
@@ -18,6 +18,7 @@ export default function GanttChart({
   customStart = null,
   customEnd = null
 }) {
+  const [viewDate, setViewDate] = useState('2026-06-26');
   const timelineRef = useRef(null);
   const hasActivities = activities && activities.length > 0;
 
@@ -127,14 +128,14 @@ export default function GanttChart({
   const columnWidth = zoom === 'month' ? 140 : 80;
   const timelineWidth = timelineHeaders.length * columnWidth;
 
-  // Scroll to current date area on mount
+  // Scroll to viewDate area on mount or viewDate change
   useEffect(() => {
     if (timelineRef.current && hasActivities) {
-      const todayOffsetPercent = getPositionPercent(CURRENT_DATE.toISOString().split('T')[0]) / 100;
+      const todayOffsetPercent = getPositionPercent(viewDate) / 100;
       const scrollPosition = (timelineWidth * todayOffsetPercent) - 200; // center it slightly
       timelineRef.current.scrollLeft = Math.max(scrollPosition, 0);
     }
-  }, [zoom, timelineWidth, hasActivities]);
+  }, [zoom, timelineWidth, hasActivities, viewDate]);
 
   // If there are no activities, show an empty state safely here
   if (!hasActivities) {
@@ -159,8 +160,19 @@ export default function GanttChart({
             Gantt Chart
           </span>
           <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-100/50">
-            <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse-subtle"></span>
-            <span>Current Date: 26 Jun 2026</span>
+            <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse-subtle print:hidden"></span>
+            <span>View Date:</span>
+            <input
+              type="date"
+              value={viewDate}
+              onChange={(e) => {
+                if (e.target.value) setViewDate(e.target.value);
+              }}
+              className="bg-transparent border-0 focus:ring-0 p-0 text-teal-750 font-bold w-[105px] cursor-pointer focus:outline-hidden text-xs print:hidden"
+            />
+            <span className="hidden print:inline font-bold text-slate-700">
+              {new Date(viewDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </span>
           </div>
         </div>
 
@@ -260,7 +272,7 @@ export default function GanttChart({
             {/* Today vertical line overlay */}
             <div
               style={{
-                left: `${280 + (timelineWidth * (getPositionPercent(CURRENT_DATE.toISOString().split('T')[0]) / 100))}px`
+                left: `${280 + (timelineWidth * (getPositionPercent(viewDate) / 100))}px`
               }}
               className="absolute top-0 bottom-0 w-[2px] bg-teal-500/40 z-1 pointer-events-none"
             >
@@ -315,22 +327,22 @@ export default function GanttChart({
                 <div
                   key={act.id}
                   onClick={() => onSelectActivity(act)}
-                  className={`flex group items-stretch min-h-[76px] transition-colors duration-150 cursor-pointer print:break-inside-avoid print:bg-white ${
+                  className={`flex group items-stretch min-h-[50px] transition-colors duration-150 cursor-pointer print:break-inside-avoid print:bg-white ${
                     isSelected 
                       ? 'bg-brand-50/80 hover:bg-brand-100/60' 
                       : 'hover:bg-slate-50/50'
                   }`}
                 >
                   <div
-                    className={`w-[280px] min-w-[280px] border-r border-slate-200/80 sticky left-0 py-3 flex flex-col justify-center gap-1.5 z-10 transition-colors shadow-[4px_0_10px_-4px_rgba(0,0,0,0.12)] print:relative print:shadow-none print:border-r print:border-slate-200/50 ${
+                    className={`w-[280px] min-w-[280px] border-r border-slate-200/80 sticky left-0 py-2 flex flex-col justify-center gap-0.5 z-10 transition-colors shadow-[4px_0_10px_-4px_rgba(0,0,0,0.12)] print:relative print:shadow-none print:border-r print:border-slate-200/50 ${
                       isSelected 
                         ? 'bg-brand-50 border-r-2 border-r-brand-500' 
                         : 'bg-white group-hover:bg-slate-50/80'
                     }`}
                     style={{ paddingLeft: `${24 + (act.depth || 0) * 16}px`, paddingRight: '24px' }}
                   >
-                    <div className="flex items-center justify-between w-full gap-2">
-                      <div className="flex items-center gap-2 truncate">
+                    <div className="flex items-start justify-between w-full gap-2">
+                      <div className="flex items-start gap-2 whitespace-normal break-words w-full">
                         {/* Expand/Collapse Chevron for Group Tasks */}
                         {act.is_group && (
                           <button
@@ -339,7 +351,7 @@ export default function GanttChart({
                               e.stopPropagation();
                               onToggleGroupCollapse(act.id);
                             }}
-                            className="p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors mr-0.5 cursor-pointer flex-shrink-0"
+                            className="p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors mr-0.5 cursor-pointer flex-shrink-0 mt-0.5"
                             title={collapsedGroups?.includes(act.id) ? "Expand Group" : "Collapse Group"}
                           >
                             {collapsedGroups?.includes(act.id) ? (
@@ -352,27 +364,27 @@ export default function GanttChart({
 
                         {/* Selection order indicator */}
                         {isSelected && (
-                          <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-bold">
+                          <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-bold mt-0.5">
                             {selectionIndex}
                           </span>
                         )}
-                        <span className={`text-xs leading-tight truncate ${act.is_group ? 'font-extrabold text-slate-800' : 'font-semibold text-slate-600'} ${isSelected ? 'text-slate-900' : ''} flex items-center gap-1.5`}>
+                        <span className={`text-xs leading-tight whitespace-normal break-words ${act.is_group ? 'font-extrabold text-slate-800' : 'font-semibold text-slate-600'} ${isSelected ? 'text-slate-900' : ''} flex items-start gap-1.5 w-full`}>
                           {act.project_name && (
-                            <span className="flex-shrink-0 text-teal-600 font-extrabold bg-teal-50/80 border border-teal-200/60 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            <span className="flex-shrink-0 text-teal-600 font-extrabold bg-teal-50/80 border border-teal-200/60 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider mt-0.5">
                               {act.project_name}
                             </span>
                           )}
                           <span 
-                            className="w-2 h-2 rounded-full flex-shrink-0 border border-slate-200/40 shadow-3xs"
+                            className="w-2 h-2 rounded-full flex-shrink-0 border border-slate-200/40 shadow-3xs mt-1"
                             style={{ backgroundColor: act.color || '#0D9488' }}
                           />
-                          <span className="truncate">{act.activity_name}</span>
+                          <span className="whitespace-normal break-words flex-1">{act.activity_name}</span>
                         </span>
                       </div>
 
                       {/* Reordering Controls (Only in individual project view, hidden in overall integrated view) */}
                       {!act.project_name && onMoveActivity && (
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 flex-shrink-0">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -399,24 +411,22 @@ export default function GanttChart({
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-2.5 text-[10px] text-slate-400 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 flex-shrink-0" />
-                        Plan: {act.plan_start ? new Date(act.plan_start).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : '—'}
-                      </span>
-                      {isDelayed && (
-                        <span className="flex items-center gap-0.5 text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded-sm">
-                          <AlertTriangle className="w-2.5 h-2.5" />
-                          +{delayDays}d
-                        </span>
-                      )}
-                      {isCompleted && !isDelayed && (
-                        <span className="flex items-center gap-0.5 text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-sm">
-                          <CheckCircle className="w-2.5 h-2.5" />
-                          Done
-                        </span>
-                      )}
-                    </div>
+                    {(isDelayed || (isCompleted && !isDelayed)) && (
+                      <div className="flex items-center gap-2.5 text-[10px] font-medium mt-1">
+                        {isDelayed && (
+                          <span className="flex items-center gap-0.5 text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded-sm">
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            +{delayDays}d
+                          </span>
+                        )}
+                        {isCompleted && !isDelayed && (
+                          <span className="flex items-center gap-0.5 text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-sm">
+                            <CheckCircle className="w-2.5 h-2.5" />
+                            Done
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Relative timeline canvas */}
@@ -434,7 +444,7 @@ export default function GanttChart({
                     </div>
 
                     {/* Dual bar wrapper */}
-                    <div className="w-full relative h-12">
+                    <div className="w-full relative h-8">
                       
                       {act.is_group ? (
                         <>
@@ -445,13 +455,13 @@ export default function GanttChart({
                                 left: `${planStartPercent}%`,
                                 width: `${planWidthPercent}%`
                               }}
-                              className="absolute top-1.5 h-3 bg-slate-800 rounded-sm z-2"
+                              className="absolute top-0.5 h-2 bg-slate-800 rounded-sm z-2"
                               title={`[Phase Plan] ${act.activity_name}\nStart: ${act.plan_start}\nEnd: ${act.plan_end}`}
                             >
                               {/* Left downward triangle/bracket */}
-                              <div className="absolute left-0 top-0 w-2.5 h-4.5 bg-slate-800 rounded-bl-sm -translate-x-[1px]" />
+                              <div className="absolute left-0 top-0 w-1.5 h-3 bg-slate-800 rounded-bl-sm -translate-x-[1px]" />
                               {/* Right downward triangle/bracket */}
-                              <div className="absolute right-0 top-0 w-2.5 h-4.5 bg-slate-800 rounded-br-sm translate-x-[1px]" />
+                              <div className="absolute right-0 top-0 w-1.5 h-3 bg-slate-800 rounded-br-sm translate-x-[1px]" />
                             </div>
                           )}
 
@@ -462,13 +472,13 @@ export default function GanttChart({
                                 left: `${actualStartPercent}%`,
                                 width: `${actualWidthPercent}%`
                               }}
-                              className={`absolute bottom-1 h-3 rounded-sm z-2 ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`}
+                              className={`absolute bottom-0.5 h-2 rounded-sm z-2 ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`}
                               title={`[Phase Actual] ${act.activity_name}\nStart: ${act.actual_start}\nEnd: ${act.actual_end || 'In Progress'}`}
                             >
                               {/* Left downward bracket */}
-                              <div className={`absolute left-0 top-0 w-2 h-4.5 rounded-bl-sm -translate-x-[1px] ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`} />
+                              <div className={`absolute left-0 top-0 w-1.5 h-3 rounded-bl-sm -translate-x-[1px] ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`} />
                               {/* Right downward bracket */}
-                              <div className={`absolute right-0 top-0 w-2 h-4.5 rounded-br-sm translate-x-[1px] ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`} />
+                              <div className={`absolute right-0 top-0 w-1.5 h-3 rounded-br-sm translate-x-[1px] ${isDelayed ? 'bg-rose-500' : 'bg-teal-600'}`} />
                             </div>
                           )}
                         </>
@@ -484,10 +494,10 @@ export default function GanttChart({
                                 borderColor: act.color || '#cbd5e1'
                               }}
                               title={`[Plan] ${act.activity_name}\nStart: ${act.plan_start}\nEnd: ${act.plan_end}`}
-                              className={`absolute top-0 h-4 rounded-md border group-hover:opacity-90 transition-all z-2 shadow-xs`}
+                              className={`absolute top-0 h-3 rounded-md border group-hover:opacity-90 transition-all z-2 shadow-2xs`}
                             >
                               <div className="w-full h-full flex items-center px-2 overflow-hidden">
-                                <span className={`text-[9px] font-bold truncate select-none opacity-0 group-hover:opacity-100 transition-opacity ${
+                                <span className={`text-[8px] font-bold truncate select-none opacity-0 group-hover:opacity-100 transition-opacity ${
                                   act.color === '#F6BB00' ? 'text-slate-800' : 'text-white'
                                 }`}>
                                   Plan
@@ -508,7 +518,7 @@ export default function GanttChart({
                                 })
                               }}
                               title={`[Actual] ${act.activity_name}\nStart: ${act.actual_start}\nEnd: ${act.actual_end || 'In Progress'}\nStatus: ${isInProgress ? 'In Progress' : 'Completed'}`}
-                              className={`absolute bottom-0 h-[18px] rounded-md transition-all z-2 shadow-xs border flex items-center justify-between px-2 overflow-hidden ${
+                              className={`absolute bottom-0 h-3 rounded-md transition-all z-2 shadow-2xs border flex items-center justify-between px-1.5 overflow-hidden ${
                                 isDelayed
                                   ? 'bg-rose-500/90 text-white border-rose-600/30 hover:bg-rose-500'
                                   : 'text-white hover:opacity-95'
@@ -516,19 +526,19 @@ export default function GanttChart({
                             >
                               {/* Inner status and label */}
                               <div className="flex items-center gap-1 overflow-hidden">
-                                <span className="text-[9px] font-extrabold uppercase tracking-wide truncate">
+                                <span className="text-[8px] font-extrabold uppercase tracking-wide truncate">
                                   {isInProgress ? 'Active' : 'Actual'}
                                 </span>
                               </div>
 
                               {/* Delay badge floating at the end of the actual bar */}
                               {isDelayed && (
-                                <span className="absolute -right-1 translate-x-full ml-2 bg-rose-100 text-rose-700 border border-rose-200 text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs whitespace-nowrap z-20">
-                                  +{delayDays} Days Delay
+                                <span className="absolute -right-1 translate-x-full ml-2 bg-rose-100 text-rose-700 border border-rose-200 text-[8px] font-black px-1.5 py-0.2 rounded shadow-2xs whitespace-nowrap z-20">
+                                  +{delayDays}d Delay
                                 </span>
                               )}
                               {isCompleted && !isDelayed && (
-                                <span className="text-[9px] font-extrabold uppercase tracking-wide text-white truncate">
+                                <span className="text-[8px] font-extrabold uppercase tracking-wide text-white truncate">
                                   Done
                                 </span>
                               )}
