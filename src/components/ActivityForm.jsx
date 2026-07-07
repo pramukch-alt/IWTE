@@ -2,10 +2,22 @@ import React, { useState } from 'react';
 import { X, Calendar, PlusCircle } from 'lucide-react';
 
 const PALETTE_COLORS = [
+  { hex: '#0D9488', name: 'Teal (Default)' },
   { hex: '#5648E0', name: 'Blue/Indigo' },
-  { hex: '#D5250D', name: 'Red' },
   { hex: '#F6BB00', name: 'Yellow/Gold' },
-  { hex: '#0D9488', name: 'Teal (Default)' }
+  { hex: '#D81B60', name: 'Pink/Magenta' },
+  { hex: '#616161', name: 'Dark Grey' },
+  { hex: '#4285F4', name: 'Light Blue' },
+  { hex: '#D5250D', name: 'Red' },
+  { hex: '#C0CA33', name: 'Lime Green' },
+  { hex: '#AD1457', name: 'Maroon' },
+  { hex: '#B39DDB', name: 'Lavender' },
+  { hex: '#E67C73', name: 'Salmon' },
+  { hex: '#F4511E', name: 'Deep Orange' },
+  { hex: '#EF6C00', name: 'Orange' },
+  { hex: '#0B8043', name: 'Forest Green' },
+  { hex: '#3F51B5', name: 'Royal Blue' },
+  { hex: '#BFBFBF', name: 'Light Grey' }
 ];
 
 export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }) {
@@ -225,18 +237,19 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
         </div>
 
         {/* Color Picker */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Activity Color
-            </label>
-            <div className="flex items-center gap-3 mt-1 bg-slate-50 p-3 border border-slate-200 rounded-xl">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Activity Color
+          </label>
+          <div className="bg-slate-50 p-3 border border-slate-200 rounded-xl">
+            <div className="grid grid-cols-8 gap-2">
               {PALETTE_COLORS.map(c => (
                 <button
                   key={c.hex}
                   type="button"
                   onClick={() => setColor(c.hex)}
                   style={{ backgroundColor: c.hex }}
-                  className={`w-7 h-7 rounded-full transition-all flex items-center justify-center hover:scale-110 cursor-pointer ${
+                  className={`w-7 h-7 rounded-full transition-all flex items-center justify-center hover:scale-110 cursor-pointer mx-auto ${
                     color === c.hex
                       ? 'ring-3 ring-teal-500/30 scale-105 border-2 border-white shadow-sm'
                       : 'border border-slate-300'
@@ -248,11 +261,12 @@ export default function ActivityForm({ isOpen, onClose, onSubmit, parentGroups }
                   )}
                 </button>
               ))}
-              <span className="text-xs font-medium text-slate-500 ml-auto">
-                {PALETTE_COLORS.find(c => c.hex === color)?.name || 'Default'}
-              </span>
+            </div>
+            <div className="text-xs font-medium text-slate-500 mt-2 text-right">
+              Selected: {PALETTE_COLORS.find(c => c.hex === color)?.name || 'Custom'}
             </div>
           </div>
+        </div>
 
           {/* Form Actions */}
           <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-100">

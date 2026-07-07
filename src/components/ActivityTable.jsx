@@ -2,10 +2,22 @@ import React, { useState } from 'react';
 import { Trash2, Edit2, Check, X, Calendar, AlertCircle, CheckCircle, Play, Copy, ChevronUp, ChevronDown, ChevronRight, ArrowDownAZ } from 'lucide-react';
 
 const PALETTE_COLORS = [
+  { hex: '#0D9488', name: 'Teal' },
   { hex: '#5648E0', name: 'Blue' },
-  { hex: '#D5250D', name: 'Red' },
   { hex: '#F6BB00', name: 'Yellow' },
-  { hex: '#0D9488', name: 'Teal' }
+  { hex: '#D81B60', name: 'Pink' },
+  { hex: '#616161', name: 'Dark Grey' },
+  { hex: '#4285F4', name: 'Light Blue' },
+  { hex: '#D5250D', name: 'Red' },
+  { hex: '#C0CA33', name: 'Lime' },
+  { hex: '#AD1457', name: 'Maroon' },
+  { hex: '#B39DDB', name: 'Lavender' },
+  { hex: '#E67C73', name: 'Salmon' },
+  { hex: '#F4511E', name: 'Deep Orange' },
+  { hex: '#EF6C00', name: 'Orange' },
+  { hex: '#0B8043', name: 'Forest Green' },
+  { hex: '#3F51B5', name: 'Royal Blue' },
+  { hex: '#BFBFBF', name: 'Light Grey' }
 ];
 
 const LockIcon = ({ className = "w-3.5 h-3.5" }) => (
@@ -326,25 +338,27 @@ export default function ActivityTable({
                           {/* Inline Color selector */}
                           <div className="flex flex-col gap-1 mt-1">
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Color</span>
-                            <div className="flex items-center gap-2 bg-slate-50 p-1.5 border border-slate-200 rounded-lg">
-                              {PALETTE_COLORS.map(c => (
-                                <button
-                                  key={c.hex}
-                                  type="button"
-                                  onClick={() => setColor(c.hex)}
-                                  style={{ backgroundColor: c.hex }}
-                                  className={`w-4 h-4 rounded-full transition-all flex items-center justify-center hover:scale-110 cursor-pointer ${
-                                    color === c.hex
-                                      ? 'ring-2 ring-teal-500/20 scale-105 border border-white'
-                                      : 'border border-slate-300'
-                                  }`}
-                                  title={c.name}
-                                >
-                                  {color === c.hex && (
-                                    <span className="w-1.5 h-1.5 bg-white rounded-full" />
-                                  )}
-                                </button>
-                              ))}
+                            <div className="bg-slate-50 p-1.5 border border-slate-200 rounded-lg">
+                              <div className="grid grid-cols-8 gap-1.5">
+                                {PALETTE_COLORS.map(c => (
+                                  <button
+                                    key={c.hex}
+                                    type="button"
+                                    onClick={() => setColor(c.hex)}
+                                    style={{ backgroundColor: c.hex }}
+                                    className={`w-4 h-4 rounded-full transition-all flex items-center justify-center hover:scale-110 cursor-pointer mx-auto ${
+                                      color === c.hex
+                                        ? 'ring-2 ring-teal-500/20 scale-105 border border-white'
+                                        : 'border border-slate-300'
+                                    }`}
+                                    title={c.name}
+                                  >
+                                    {color === c.hex && (
+                                      <span className="w-1 h-1 bg-white rounded-full" />
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
