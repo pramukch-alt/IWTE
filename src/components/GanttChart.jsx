@@ -28,7 +28,8 @@ export default function GanttChart({
   collapsedGroups,
   onToggleGroupCollapse,
   customStart = null,
-  customEnd = null
+  customEnd = null,
+  isOverallSorted = false
 }) {
   const [viewDate, setViewDate] = useState('2026-06-26');
   const timelineRef = useRef(null);
@@ -238,15 +239,19 @@ export default function GanttChart({
             </div>
           </div>
 
-          {/* Sort Button (Hidden in overall integrated view) */}
-          {!isOverallView && onSortByPlannedStart && (
+          {/* Sort Button */}
+          {onSortByPlannedStart && (
             <button
               onClick={onSortByPlannedStart}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer print:hidden"
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border shadow-2xs transition-all cursor-pointer print:hidden ${
+                isOverallView && isOverallSorted
+                  ? 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100/50'
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+              }`}
               title="Sort activities chronologically by planned start date"
             >
-              <ArrowDownAZ className="w-3.5 h-3.5 text-slate-400" />
-              Sort by Plan Start
+              <ArrowDownAZ className={`w-3.5 h-3.5 ${isOverallView && isOverallSorted ? 'text-teal-600' : 'text-slate-400'}`} />
+              Sort by Plan Start {isOverallView && isOverallSorted ? '(Active)' : ''}
             </button>
           )}
 

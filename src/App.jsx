@@ -55,6 +55,7 @@ export default function App() {
 
   // Overall display comparison mode: 'project' or 'compare'
   const [overallMode, setOverallMode] = useState('project');
+  const [isOverallSorted, setIsOverallSorted] = useState(false);
 
   // Fetch projects on mount
   useEffect(() => {
@@ -94,6 +95,7 @@ export default function App() {
       }
       // Reset gap selection when project changes
       setSelectedActivities([]);
+      setIsOverallSorted(false);
     } catch (err) {
       console.error('Error fetching activities:', err);
       setError('Failed to load project activities.');
@@ -264,7 +266,10 @@ export default function App() {
 
   // Automatically sort activities in ascending order of planned start date
   const handleSortByPlannedStart = async () => {
-    if (selectedProjectId === 'overall') return;
+    if (selectedProjectId === 'overall') {
+      setIsOverallSorted(prev => !prev);
+      return;
+    }
 
     // Sort by planned start date (earliest first)
     const sorted = [...activities].sort((a, b) => new Date(a.plan_start) - new Date(b.plan_start));
@@ -351,7 +356,16 @@ export default function App() {
     const flatten = (nodes, parentId = null, depth = 0) => {
       const result = [];
       const levelNodes = nodes.filter(n => n.parent_id === parentId);
-      levelNodes.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      
+      if (selectedProjectId === 'overall' && isOverallSorted) {
+        levelNodes.sort((a, b) => {
+          const dateA = a.plan_start ? new Date(a.plan_start) : new Date(0);
+          const dateB = b.plan_start ? new Date(b.plan_start) : new Date(0);
+          return dateA - dateB;
+        });
+      } else {
+        levelNodes.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      }
 
       for (const node of levelNodes) {
         result.push({ ...node, depth });
@@ -1074,6 +1088,7 @@ export default function App() {
                 onMoveActivity={handleMoveActivity}
                 onSortByPlannedStart={handleSortByPlannedStart}
                 isOverallView={selectedProjectId === 'overall'}
+                isOverallSorted={isOverallSorted}
                 collapsedGroups={collapsedGroups}
                 onToggleGroupCollapse={toggleGroupCollapse}
                 customStart={isPrintingActive ? printStart : null}
@@ -1092,6 +1107,7 @@ export default function App() {
               onMoveActivity={handleMoveActivity}
               onSortByPlannedStart={handleSortByPlannedStart}
               isOverallView={selectedProjectId === 'overall'}
+              isOverallSorted={isOverallSorted}
               collapsedGroups={collapsedGroups}
               onToggleGroupCollapse={toggleGroupCollapse}
               parentGroups={activities.filter(a => a.is_group)}

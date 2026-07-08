@@ -42,7 +42,8 @@ export default function ActivityTable({
   isOverallView,
   collapsedGroups,
   onToggleGroupCollapse,
-  parentGroups
+  parentGroups,
+  isOverallSorted = false
 }) {
   // Track which activity is currently being edited inline
   const [editingId, setEditingId] = useState(null);
@@ -226,15 +227,19 @@ export default function ActivityTable({
           <p className="text-xs text-slate-500 mt-0.5">Manage planned schedules, edit activity names/dates, and update actual progress.</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Sort Button (Hidden in overall view) */}
-          {!isOverallView && onSortByPlannedStart && (
+          {/* Sort Button */}
+          {onSortByPlannedStart && (
             <button
               onClick={onSortByPlannedStart}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shadow-2xs transition-all cursor-pointer"
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border shadow-2xs transition-all cursor-pointer ${
+                isOverallView && isOverallSorted
+                  ? 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100/50'
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+              }`}
               title="Sort activities chronologically by planned start date"
             >
-              <ArrowDownAZ className="w-3.5 h-3.5 text-slate-400" />
-              Sort by Plan Start
+              <ArrowDownAZ className={`w-3.5 h-3.5 ${isOverallView && isOverallSorted ? 'text-teal-600' : 'text-slate-400'}`} />
+              Sort by Plan Start {isOverallView && isOverallSorted ? '(Active)' : ''}
             </button>
           )}
           <span className="text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200/50 px-2.5 py-1 rounded-md">
