@@ -498,17 +498,22 @@ export default function App() {
 
   const currentMetrics = getProjectMetrics(activities);
 
-  // Filter activities dynamically: in overall view, only show checked activities from the selector panel
-  const displayActivities = selectedProjectId === 'overall'
+  // The complete unfiltered list of activities in the WBS sequence for the current context
+  const unfilteredDisplayActivities = selectedProjectId === 'overall'
     ? (overallMode === 'compare' 
         ? getComparisonFlattenedActivities(activities) 
         : getFlattenedActivities(activities)
-      ).filter(act => selectedOverallActivities.includes(act.id))
+      )
     : getFlattenedActivities(activities.filter(act => Number(act.project_id) === Number(selectedProjectId)));
 
-  // Filter by selected print IDs if print is active
+  // Filter activities dynamically: in overall view, only show checked activities from the selector panel
+  const displayActivities = selectedProjectId === 'overall'
+    ? unfilteredDisplayActivities.filter(act => selectedOverallActivities.includes(act.id))
+    : unfilteredDisplayActivities;
+
+  // Filter by selected print IDs if print is active (apply filter to unfiltered display list to capture all checked print IDs)
   const printFilteredActivities = isPrintingActive
-    ? displayActivities.filter(act => printVisibleIds.includes(act.id))
+    ? unfilteredDisplayActivities.filter(act => printVisibleIds.includes(act.id))
     : displayActivities;
 
   // Filter activities by search term
@@ -1117,7 +1122,8 @@ export default function App() {
       <PrintSetupModal
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
-        activities={displayActivities}
+        activities={unfilteredDisplayActivities}
+        initialSelectedIds={selectedProjectId === 'overall' ? selectedOverallActivities : null}
         onConfirmPrint={handleConfirmPrint}
       />
 

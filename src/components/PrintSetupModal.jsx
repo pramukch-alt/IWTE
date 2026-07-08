@@ -19,7 +19,7 @@ const generateMonths = () => {
   return months;
 };
 
-export default function PrintSetupModal({ isOpen, onClose, activities, onConfirmPrint }) {
+export default function PrintSetupModal({ isOpen, onClose, activities, initialSelectedIds, onConfirmPrint }) {
   const months = generateMonths();
   
   const [rangeType, setRangeType] = useState('all'); // 'all' or 'custom'
@@ -28,12 +28,16 @@ export default function PrintSetupModal({ isOpen, onClose, activities, onConfirm
   const [visibleIds, setVisibleIds] = useState([]);
   const [paperSize, setPaperSize] = useState('A3');
 
-  // Initialize visibleIds with all activity IDs when open
+  // Initialize visibleIds with selected activity IDs or all when open
   useEffect(() => {
     if (isOpen && activities) {
-      setVisibleIds(activities.map(a => a.id));
+      if (initialSelectedIds && initialSelectedIds.length > 0) {
+        setVisibleIds(initialSelectedIds.filter(id => activities.some(a => a.id === id)));
+      } else {
+        setVisibleIds(activities.map(a => a.id));
+      }
     }
-  }, [isOpen, activities]);
+  }, [isOpen, activities, initialSelectedIds]);
 
   if (!isOpen) return null;
 
@@ -197,6 +201,11 @@ export default function PrintSetupModal({ isOpen, onClose, activities, onConfirm
                       <CheckSquare className="w-4 h-4 text-teal-600 flex-shrink-0" />
                     ) : (
                       <Square className="w-4 h-4 text-slate-350 flex-shrink-0" />
+                    )}
+                    {act.project_name && (
+                      <span className="flex-shrink-0 text-teal-600 font-extrabold bg-teal-50 border border-teal-200/60 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        {act.project_name}
+                      </span>
                     )}
                     <span className={`text-xs truncate ${act.is_group ? 'text-slate-800' : 'text-slate-650'}`}>
                       {act.activity_name}
