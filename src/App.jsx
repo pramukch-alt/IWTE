@@ -271,8 +271,16 @@ export default function App() {
       return;
     }
 
-    // Sort by planned start date (earliest first)
-    const sorted = [...activities].sort((a, b) => new Date(a.plan_start) - new Date(b.plan_start));
+    // Sort by planned start date (earliest first) safely
+    const sorted = [...activities].sort((a, b) => {
+      const getTime = (dateStr) => {
+        if (!dateStr) return 253402214400000; // Far future (Year 9999)
+        const d = new Date(dateStr);
+        const t = d.getTime();
+        return isNaN(t) ? 253402214400000 : t;
+      };
+      return getTime(a.plan_start) - getTime(b.plan_start);
+    });
 
     // Optimistic local state update for a highly responsive UI
     setActivities(sorted);
@@ -359,9 +367,13 @@ export default function App() {
       
       if (selectedProjectId === 'overall' && isOverallSorted) {
         levelNodes.sort((a, b) => {
-          const dateA = a.plan_start ? new Date(a.plan_start) : new Date(0);
-          const dateB = b.plan_start ? new Date(b.plan_start) : new Date(0);
-          return dateA - dateB;
+          const getTime = (dateStr) => {
+            if (!dateStr) return 253402214400000; // Far future (Year 9999)
+            const d = new Date(dateStr);
+            const t = d.getTime();
+            return isNaN(t) ? 253402214400000 : t;
+          };
+          return getTime(a.plan_start) - getTime(b.plan_start);
         });
       } else {
         levelNodes.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -377,6 +389,7 @@ export default function App() {
     };
 
     const projectIds = [...new Set(activitiesList.map(a => Number(a.project_id)))];
+    projectIds.sort((a, b) => a - b);
     let result = [];
     for (const pid of projectIds) {
       const projNodes = rolledUpList.filter(n => Number(n.project_id) === pid);
