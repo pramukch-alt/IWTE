@@ -152,34 +152,88 @@ export default function App() {
   };
 
   // Handle print settings confirmation
-  const handleConfirmPrint = ({ customStart, customEnd, selectedIds, paperSize }) => {
+  const handleConfirmPrint = ({ customStart, customEnd, selectedIds, paperSize, exportType = 'print' }) => {
     setPrintStart(customStart);
     setPrintEnd(customEnd);
     setPrintVisibleIds(selectedIds);
-    setIsPrintingActive(true);
     setIsPrintModalOpen(false);
 
-    // Apply paper size dynamically via style sheet injection
-    const styleId = 'print-page-style';
-    let styleEl = document.getElementById(styleId);
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = styleId;
-      document.head.appendChild(styleEl);
-    }
-    styleEl.innerHTML = `
-      @media print {
-        @page {
-          size: ${paperSize || 'A3'} landscape !important;
-          margin: 15mm 10mm 15mm 10mm !important;
-        }
-      }
-    `;
+    if (exportType === 'png' || exportType === 'jpg') {
+      setIsPrintingActive(true);
+      
+      // Give state updates time to apply, then capture
+      setTimeout(async () => {
+        try {
+          document.body.classList.add('export-image-active');
+          const element = document.getElementById('gantt-capture-area');
+          if (!element) {
+            alert('Export area not found');
+            return;
+          }
 
-    // Give state updates time to render, then open the print dialog
-    setTimeout(() => {
-      window.print();
-    }, 150);
+          const { toPng, toJpeg } = await import('html-to-image');
+          
+          let dataUrl;
+          const projName = selectedProjectId === 'overall' 
+            ? 'Overall_Integrated_Schedule'
+            : projects.find(p => Number(p.id) === Number(selectedProjectId))?.name?.replace(/\s+/g, '_') || `Project_${selectedProjectId}`;
+          
+          const fileName = `${projName}_Gantt_Chart.${exportType}`;
+
+          if (exportType === 'png') {
+            dataUrl = await toPng(element, {
+              backgroundColor: '#ffffff',
+              style: {
+                transform: 'none',
+              }
+            });
+          } else {
+            dataUrl = await toJpeg(element, {
+              quality: 0.95,
+              backgroundColor: '#ffffff',
+              style: {
+                transform: 'none',
+              }
+            });
+          }
+
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = dataUrl;
+          link.click();
+        } catch (err) {
+          console.error('Error generating image:', err);
+          alert('Failed to generate picture. Please try again.');
+        } finally {
+          document.body.classList.remove('export-image-active');
+          setIsPrintingActive(false);
+        }
+      }, 300);
+    } else {
+      setIsPrintingActive(true);
+      
+      // Apply paper size dynamically via style sheet injection
+      const styleId = 'print-page-style';
+      let styleEl = document.getElementById(styleId);
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.innerHTML = `
+        @media print {
+          @page {
+            size: ${paperSize || 'A3'} landscape !important;
+            margin: 15mm 10mm 15mm 10mm !important;
+          }
+        }
+      `;
+
+      // Give state updates time to render, then open the print dialog
+      setTimeout(() => {
+        window.print();
+      }, 150);
+    }
   };
 
   // Clean up printing state after print window closes
@@ -754,7 +808,7 @@ export default function App() {
       <main className="flex-1 flex flex-col w-full overflow-y-auto">
         
         {/* Dashboard Area */}
-        <div className="p-8 flex flex-col gap-6 max-w-[1600px] w-full mx-auto flex-1 print:p-0 print:gap-4 print:max-w-none">
+        <div id="gantt-capture-area" className="p-8 flex flex-col gap-6 max-w-[1600px] w-full mx-auto flex-1 print:p-0 print:gap-4 print:max-w-none">
           {/* Print Header (Only visible when printing) */}
           <div className="hidden print:block mb-6 border-b-2 border-slate-300 pb-4">
             <div className="flex items-baseline justify-between">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Printer, Calendar, ListTodo, CheckSquare, Square } from 'lucide-react';
+import { X, Printer, Calendar, ListTodo, CheckSquare, Square, FileImage } from 'lucide-react';
 
 // Generate selectable months from Jan 2025 to Dec 2028
 const generateMonths = () => {
@@ -27,6 +27,18 @@ export default function PrintSetupModal({ isOpen, onClose, activities, initialSe
   const [endMonth, setEndMonth] = useState('2027-12-01');
   const [visibleIds, setVisibleIds] = useState([]);
   const [paperSize, setPaperSize] = useState('A3');
+  const [imageFormat, setImageFormat] = useState('png');
+
+  const handleImageSubmit = (e) => {
+    e.preventDefault();
+    onConfirmPrint({
+      customStart: rangeType === 'custom' ? startMonth : null,
+      customEnd: rangeType === 'custom' ? endMonth : null,
+      selectedIds: visibleIds,
+      paperSize: paperSize,
+      exportType: imageFormat
+    });
+  };
 
   // Initialize visibleIds with selected activity IDs or all when open
   useEffect(() => {
@@ -61,7 +73,8 @@ export default function PrintSetupModal({ isOpen, onClose, activities, initialSe
       customStart: rangeType === 'custom' ? startMonth : null,
       customEnd: rangeType === 'custom' ? endMonth : null,
       selectedIds: visibleIds,
-      paperSize: paperSize
+      paperSize: paperSize,
+      exportType: 'print'
     });
   };
 
@@ -220,7 +233,7 @@ export default function PrintSetupModal({ isOpen, onClose, activities, initialSe
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
@@ -228,10 +241,31 @@ export default function PrintSetupModal({ isOpen, onClose, activities, initialSe
             >
               Cancel
             </button>
+            
+            <div className="flex items-center gap-2">
+              <select
+                value={imageFormat}
+                onChange={(e) => setImageFormat(e.target.value)}
+                className="bg-slate-50 border border-slate-300 rounded-xl px-2 py-1.5 text-xs font-semibold text-slate-750 cursor-pointer focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+              >
+                <option value="png">PNG Image</option>
+                <option value="jpg">JPG Image</option>
+              </select>
+              <button
+                type="button"
+                disabled={visibleIds.length === 0}
+                onClick={handleImageSubmit}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-teal-600 hover:bg-teal-500 rounded-xl shadow-xs border border-teal-700/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <FileImage className="w-4 h-4" />
+                Save to Picture
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={visibleIds.length === 0}
-              className="flex items-center gap-1.5 px-4.5 py-2 text-sm font-bold text-white bg-teal-600 hover:bg-teal-500 rounded-xl shadow-xs border border-teal-700/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-4.5 py-2 text-sm font-bold text-white bg-slate-800 hover:bg-slate-700 rounded-xl shadow-xs border border-slate-900/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               Confirm & Print

@@ -100,3 +100,41 @@
   }
 }
 
+/* Image Export Styles */
+body.export-image-active {
+  background: white !important;
+}
+
+body.export-image-active #gantt-capture-area {
+  padding: 24px !important;
+  background: white !important;
+  max-width: none !important;
+  width: max-content !important;
+  height: auto !important;
+}
+
+body.export-image-active .custom-scrollbar,
+body.export-image-active .overflow-x-auto,
+body.export-image-active .overflow-y-auto {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+body.export-image-active .print-hide,
+body.export-image-active .no-print,
+body.export-image-active header,
+body.export-image-active aside,
+body.export-image-active button,
+body.export-image-active .kpi-section,
+body.export-image-active .gap-analyzer,
+body.export-image-active .overall-selector,
+body.export-image-active .activity-table-section,
+body.export-image-active .form-actions {
+  display: none !important;
+}
+
+body.export-image-active .hidden.print\:block {
+  display: block !important;
+}
+
