@@ -307,11 +307,18 @@ export default function App() {
     // Swap the two WBS blocks (elements and their children move together)
     const reorderedFlat = [...before, ...part2, ...part1, ...after];
 
+    // Update sort_order properties of the reordered array elements
+    const reorderedWithUpdatedOrder = reorderedFlat.map((act, idx) => ({
+      ...act,
+      sort_order: idx
+    }));
+
     // Optimistic UI update
-    setActivities(reorderedFlat);
+    setActivities(reorderedWithUpdatedOrder);
 
     try {
-      await dbService.updateActivitiesOrder(reorderedFlat);
+      await dbService.updateActivitiesOrder(reorderedWithUpdatedOrder);
+      await fetchActivities(); // Sync local state with database
     } catch (err) {
       console.error('Error saving activity order:', err);
       fetchActivities();
@@ -336,11 +343,18 @@ export default function App() {
       return getTime(a.plan_start) - getTime(b.plan_start);
     });
 
+    // Update sort_order properties of the sorted array elements
+    const sortedWithUpdatedOrder = sorted.map((act, idx) => ({
+      ...act,
+      sort_order: idx
+    }));
+
     // Optimistic local state update for a highly responsive UI
-    setActivities(sorted);
+    setActivities(sortedWithUpdatedOrder);
 
     try {
-      await dbService.updateActivitiesOrder(sorted);
+      await dbService.updateActivitiesOrder(sortedWithUpdatedOrder);
+      await fetchActivities(); // Sync local state with database
     } catch (err) {
       console.error('Error saving sorted activities order:', err);
       // Revert if saving failed
